@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
-
-
+from pathlib import Path
+# Base_Diractory
+BASE_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     # Gemini API
     GEMINI_API_KEY: str = ""
@@ -20,6 +21,11 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    
+    #templates
+    TEMPLATES_DIR: str = str(BASE_DIR / "frontend" / "pages")
 
+    #static
+    STATIC_DIR: str = str(BASE_DIR / "frontend" / "css")
 
 settings = Settings()
