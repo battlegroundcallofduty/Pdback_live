@@ -51,5 +51,5 @@ async def index(request: Request):
 
 # 면접 시작 버튼 누르면 interview-setup.html 로 들어감.
 @app.get("/start")
-async def index(request: Request):
+async def start_page(request: Request):
     return templates.TemplateResponse("interview-setup.html", {"request": request, "db_name": settings.MONGODB_DB_NAME})
