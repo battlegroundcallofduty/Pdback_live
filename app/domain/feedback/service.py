@@ -7,7 +7,8 @@ from app.domain.feedback.schema import (
     FeedbackResponse, QuestionFeedbackResponse,
     PostureSummaryResponse)
 from app.domain.feedback.models import (
-    AiFeedback, PostureSummary, FeedbackDocument, QuestionFeedback)
+    AiFeedback, PostureSummary,
+    FeedbackDocument, QuestionFeedback)
 from app.domain.interview.models import InterviewDocument
 from app.domain.interview.prompt import get_feedback_prompt
 from app.services.gemini import get_client
@@ -17,44 +18,15 @@ from app.database import get_database
 # - router 에서 쓰일 함수 3개
 # 피드백 생성 메인 함수
 async def create_feedback(session_id: str) -> FeedbackResponse:
-    # 1. 면접 데이터 조회
-    interview = await _get_interview(session_id)
-    # 2. AI 피드백 생성 (논리/기술점수, 강점/개선점, 총괄피드백)
-    ai_feedback = await _generate_ai_feedback(interview)
-    # 3. 자세 데이터 가공
-    posture_summary = _process_posture(interview)
-    # 4. DB 저장
-    feedback_doc = FeedbackDocument(
-        interview_id=session_id,
-        user_id=interview.user_id,
-        ai_feedback=ai_feedback,
-        posture_summary=posture_summary,
-    )
-    await _save_feedback(feedback_doc)
-    # 5. 응답 변환
-    return _to_response(feedback_doc, interview)
+    pass
 
 # 피드백 결과 조회 (feedback.html)
 async def get_feedback(interview_id: str) -> FeedbackResponse:
-    db = get_database()
-    doc = await db["feedback"].find_one({"interview_id": interview_id})
-    if doc is None:
-        raise ValueError(f"피드백을 찾을 수 없습니다: {interview_id}")
-    feedback_doc = FeedbackDocument(**doc)
-    interview = await _get_interview(interview_id)
-    return _to_response(feedback_doc, interview)
+    pass
 
 # 히스토리 목록 조회 (history.html)
 async def get_history(user_id: str) -> list[FeedbackResponse]:
-    db = get_database()
-    docs = await db["feedback"].find({"user_id": user_id}).to_list(length=None)
-    results = []
-    for doc in docs:
-        feedback_doc = FeedbackDocument(**doc)
-        interview = await _get_interview(feedback_doc.interview_id)
-        results.append(_to_response(feedback_doc, interview))
-    return results
-
+    pass
 
 
 # - 여기서만 쓰이는 내부 함수들 5개
@@ -66,10 +38,16 @@ async def _get_interview(session_id: str) -> InterviewDocument:
 
 # gemini 여기서 한번 호출해서 필요한거 다 받기
 async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
-    # 면접 질문/답변 목록 추출
+    # interview에서 질문/답변 목록 추출
     questions = [q.question_content for q in interview.questions]
-    answers = [q.answer.answer_content if q.answer else "" for q in interview.questions]
+    answers = []
+    for q in interview.questions:
+        if q.answer:                      
+            answers.append(q.answer.answer_content)
+        else:  
+            answers.append("")
 
+    # 평일님 prompt.py 완성 후 연결 필요 1
     # 피드백 프롬프트 생성
     prompt = get_feedback_prompt(
         questions=questions,
@@ -78,38 +56,35 @@ async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
         experience_years=interview.career_years,
     )
 
-    # Gemini 단발성 호출 (채팅 세션 불필요)
+    # 평일님 prompt.py 완성 후 연결 필요 2
+    # 모델 일단 쓰시던거 넣어놨어요. 함수 수정하셔도 됩니다.
+    # Gemini 호출(채팅 세션 불필요, 피드백 생성은 대화형이 아니라 분석용이라 단발성)
     client = get_client()
     response = await client.aio.models.generate_content(
-        model="gemini-2.0-flash-lite",
+        model="gemini-3.1-flash-lite-preview",
         contents=prompt,
     )
 
-    # 마크다운 코드 블록 제거 후 JSON 파싱
-    raw = response.text.strip()
-    raw = re.sub(r"^```(?:json)?\s*", "", raw)
-    raw = re.sub(r"\s*```$", "", raw).strip()
-    data = json.loads(raw)
+    # gemini 응답이 마크다운에 싸여서 나오는 경우 대비하여 파싱 코드
+    # 파싱: 텍스트를 프로그램이 쓸 수 있는 구조로 변환하는것
+    # gemini 응답에서 마크다운 껍데기 벗기기 -> 그 안의 json 텍스트를 python 딕셔너리로 변환
+    raw = response.text.strip()                 # gemini 응답 텍스트 꺼내기
+    raw = re.sub(r"^```(?:json)?\s*", "", raw)  # 앞쪽 ```json -> 빈 문자열로 대체
+    raw = re.sub(r"\s*```$", "", raw).strip()   # 뒤쪽 ``` -> 빈 문자열로 대체
+    data = json.loads(raw)                      # 'json 문자열' -> {python 딕셔너리}
 
-    question_feedbacks = [
-        QuestionFeedback(
-            question_number=qf["question_number"],
-            score=qf["score"],
-            comment=qf["comment"],
-        )
-        for qf in data.get("question_feedbacks", [])
-    ]
-
-    return AiFeedback(
-        interview_score=data["interview_score"],
-        technical_score=data["technical_score"],
-        logic_score=data["logic_score"],
-        keyword_score=data["keyword_score"],
-        interview_comment=data["interview_comment"],
-        strengths=data["strengths"],
-        improvements=data["improvements"],
-        question_feedbacks=question_feedbacks,
-    )
+    # AiFeedback 객체 만들어서 반환
+    # return AiFeedback(
+    #     interview_score=data["interview_score"],
+    #     technical_score=data["technical_score"],
+    #     logic_score=data["logic_score"],
+    #     keyword_score=data["keyword_score"],
+    #     interview_comment=data["interview_comment"],
+    #     strengths=data["strengths"],
+    #     improvements=data["improvements"],
+    #     question_feedbacks=question_feedbacks,
+    # )
+    pass  # 프롬프트가 아직 완성이 안돼서 미완성 함수라 패스~
 
 # 자세/태도 데이터 받은거 피드백으로 가공
 def _process_posture(interview) -> PostureSummary:
