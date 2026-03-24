@@ -25,6 +25,7 @@
             <div class="profile-avatar">👤</div>
             <div id="profile-name" class="profile-name">--</div>
             <div id="profile-email" class="profile-email">--</div>
+            <div id="profile-position" class="profile-position">희망 직무 : --</div>
             <div class="profile-stats">
               <div class="stat-item">
                 <div class="stat-value">-</div>
@@ -60,11 +61,11 @@
                 <input id="input-current-password" type="password" placeholder="현재 비밀번호">
               </div>
               <div class="input-group">
-                <label for="input-new-password">새 비밀번호</label>
+                <label for="input-new-password">새 비밀번호(8자 이상)</label>
                 <input id="input-new-password" type="password" placeholder="새 비밀번호 입력">
               </div>
               <div class="input-group">
-                <label for="input-confirm-password">새 비밀번호 확인</label>
+                <label for="input-confirm-password">새 비밀번호 확인(8자 이상)</label>
                 <input id="input-confirm-password" type="password" placeholder="새 비밀번호 확인">
               </div>
               <div style="display:flex;gap:12px;margin-top:8px;">
@@ -105,6 +106,7 @@
           const user = await response.json();
           document.getElementById('profile-name').textContent = user.username; //프로필칸 유저정보 표시용
           document.getElementById('profile-email').textContent = user.email;
+          document.getElementById('profile-position').textContent = '희망 직무 : ' + (user.position || '--'); //직무
           document.getElementById('input-username').value = user.username; //이름 수정 폼 입력칸
           document.getElementById('input-email').value = user.email; //이메일 수정불가능 , 그냥 현재 이메일(아이디) 보여주기
         } catch (error) {
@@ -118,7 +120,6 @@
       });
 
       //프로필 수정(이름,비밀번호)
-      //미완성 - API연동필요!!!!!!후 수정 필요할것 같아요
       document.getElementById('profile-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -157,6 +158,11 @@
           if (response.ok) {
             alert('프로필이 수정되었습니다.'); //수정후에
             loadUserInfo(); //다시 실행
+
+            //수정하고나면 비밀번호도 초기화
+            document.getElementById('input-current-password').value='';
+            document.getElementById('input-new-password').value='';
+            document.getElementById('input-confirm-password').value='';
           } else {
             alert('프로필 수정에 실패했습니다.');
           }
@@ -183,7 +189,6 @@
       });
 
       //회원 탈퇴
-      //미완성 - API연동필요!!!!!!후 수정 필요할것 같아요 
       document.getElementById('btn-withdraw').addEventListener('click', async () => {
         if (!confirm('정말 탈퇴하시겠습니까?')) return;
 
