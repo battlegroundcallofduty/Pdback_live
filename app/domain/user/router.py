@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from app.domain.user import service
-from app.domain.user.schemas import UserRegister, UserLogin, UserResponse
+from app.domain.user.schemas import UserRegister, UserLogin, UserResponse, UserUpdate
 from app.domain.user.dependency import get_current_user
 
 
@@ -31,3 +31,14 @@ async def logout(current_user: str = Depends(get_current_user)):
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: str = Depends(get_current_user)):
     return await service.get_me(current_user)
+
+
+#프로필,비밀번호 수정
+@router.patch("/me")
+async def update_me(data:UserUpdate, current_user : str = Depends(get_current_user)):
+    return await service.update_me(current_user, data.username, data.current_password, data.new_password)
+
+#회원탈퇴
+@router.delete("/me")
+async def delete_me(current_user: str = Depends(get_current_user)):
+    return await service.delete_me(current_user)
