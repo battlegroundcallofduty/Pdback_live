@@ -7,7 +7,7 @@ class UserRegister(BaseModel):
     username: str = Field(..., min_length=2)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    position: str | None = None 
+    position: Literal["backend", "frontend", "fullstack", "data","devops"] | None = None 
 
 # 2. 로그인 입력값
 class UserLogin(BaseModel):
@@ -21,10 +21,16 @@ class UserResponse(BaseModel):
     email: str
     role: Literal["candidate", "admin"]
     is_active: bool
-    position: str | None = None      
+    position: Literal["backend", "frontend", "fullstack", "data","devops"] | None = None
     last_login: datetime | None = None  
     created_at: datetime
     updated_at: datetime
 
+    #MongoDB에서 가져온 데이터를 pydantic 모델로 변환할 때 필요
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    username: str
+    current_password: str | None = None
+    new_password: str | None = Field(default=None, min_length=8)
