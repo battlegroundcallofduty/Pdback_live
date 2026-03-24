@@ -15,7 +15,7 @@ from app.database import get_database
 
 # === router.py 함수 3개
 # 피드백 생성 메인 함수
-async def create_feedback(session_id: str) -> FeedbackResponse:
+async def create_feedback(session_id: str, user_id: str) -> FeedbackResponse:
 
     interview = await _get_interview(session_id)          # 면접 데이터
     ai_feedback = await _generate_ai_feedback(interview)  # ai 피드백
@@ -24,7 +24,7 @@ async def create_feedback(session_id: str) -> FeedbackResponse:
     # DB에 저장할 문서 생성
     feedback_doc = FeedbackDocument(
         interview_id=session_id,
-        user_id=interview.user_id,
+        user_id=user_id,
         ai_feedback=ai_feedback,
         posture_summary=posture_summary,
     )
