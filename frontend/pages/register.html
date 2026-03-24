@@ -42,7 +42,7 @@
             </div>
             <div class="input-group">
               <label for="position">포지션</label>
-              <input type="text" id="position" placeholder="예 - backend, frontend, devops">
+              <input type="text" id="position" placeholder="예 - backend, frontend, fullstack, data, devops">
             </div>
             <button type="submit" class="btn-primary">회원가입</button>
           </form>
@@ -88,7 +88,11 @@
             localStorage.setItem('token', data.token);
             window.location.href = 'interview-setup.html'; //면접페이지로 이동
           } else {
-            alert(data.detail);
+            if (typeof data.detail === 'string') {
+              alert(data.detail);
+            } else {
+              alert('포지션은 backend, frontend, fullstack, data, devops 중 하나를 입력해주세요.');
+            }
           }
         } catch (e) {
           alert('네트워크 오류가 발생했습니다.'); 
