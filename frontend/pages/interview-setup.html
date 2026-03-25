@@ -100,38 +100,38 @@
   // 2. 기술 스택 선택 버튼 렌더링 함수
   // ========================================
   // 직무 선택 시 해당 직무의 기술 스택 버튼 목록을 화면에 그려줌
-const renderStackButtons = (role) => {
-  techStacks.length = 0;
-  stackTagsContainer.innerHTML = '';
+  const renderStackButtons = (role) => {
+    techStacks.length = 0;
+    stackTagsContainer.innerHTML = '';
 
-  const stacks = STACK_BY_ROLE[role] || [];
+    const stacks = STACK_BY_ROLE[role] || [];
 
-  stacks.forEach(stackName => {
-    const btn = document.createElement('div');
-    btn.className = 'radio-mock'; // ← suggest-tag 에서 radio-mock 으로 변경
-    btn.textContent = stackName;
+    stacks.forEach(stackName => {
+      const btn = document.createElement('div');
+      btn.className = 'radio-mock';
+      btn.textContent = stackName;
 
-    btn.addEventListener('click', () => {
-      if (techStacks.includes(stackName)) {
-        // 선택 해제
-        const index = techStacks.indexOf(stackName);
-        techStacks.splice(index, 1);
-        btn.classList.remove('selected');
-      } else {
-        // 최대 3개 제한
-        if (techStacks.length >= 3) {
-          alert('기술 스택은 최대 3개까지 선택 가능합니다.');
-          return;
+      btn.addEventListener('click', () => {
+        if (techStacks.includes(stackName)) {
+          // 선택 해제
+          const index = techStacks.indexOf(stackName);
+          techStacks.splice(index, 1);
+          btn.classList.remove('selected');
+        } else {
+          // 최대 3개 제한
+          if (techStacks.length >= 3) {
+            alert('기술 스택은 최대 3개까지 선택 가능합니다.');
+            return;
+          }
+          // 선택
+          techStacks.push(stackName);
+          btn.classList.add('selected');
         }
-        // 선택
-        techStacks.push(stackName);
-        btn.classList.add('selected');
-      }
-    });
+      });
 
-    stackTagsContainer.appendChild(btn);
-  });
-};
+      stackTagsContainer.appendChild(btn);
+    });
+  };
   // ========================================
   // 3. 직무 선택 클릭 이벤트
   // ========================================
@@ -193,12 +193,9 @@ navigator.mediaDevices.getUserMedia({ audio: true })
     micStatus.textContent = '✗ 거부됨';
   });
 
-  // ========================================
-  // 7. 면접 시작하기 버튼 → API 호출
-  // ========================================
   const startBtn = document.querySelector('.btn-primary');
 
-  startBtn.addEventListener('click', async () => {
+  startBtn.addEventListener('click', () => {
     // 직무 선택값 가져오기
     const jobRole = jobRoleGroup.querySelector('.radio-mock.selected')?.textContent;
 
@@ -218,6 +215,15 @@ navigator.mediaDevices.getUserMedia({ audio: true })
       alert('기술 스택을 1개 이상 선택해주세요.');
       return;
     }
+    // 확인 중 상태 차단
+    if (cameraStatus.textContent === '확인 중...') {
+      alert('카메라 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    if (micStatus.textContent === '확인 중...') {
+      alert('마이크 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
     if (cameraStatus.textContent !== '✓ 허용됨') {
       alert('카메라 권한을 허용해주세요.');
       return;
@@ -230,52 +236,14 @@ navigator.mediaDevices.getUserMedia({ audio: true })
     startBtn.disabled = true;
     startBtn.textContent = '면접 준비 중...';
 
-    try {
-      // 백엔드 API 호출
-      const response = await fetch('/api/v1/interview/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          job_role: jobRole,
-          tech_stack: techStacks,
-          experience_years: experienceYears,
-        }),
-      });
-
-      if (!response.ok) throw new Error('서버 오류');
-        const data = await response.json();
-
-      // session_id 를 URL 파라미터로 넘겨서 면접 페이지로 이동
-      window.location.href = `/pages/interview.html?session_id=${data.session_id}`;
-
-    } catch (error) {
-      alert('면접 시작에 실패했습니다. 다시 시도해주세요.');
-      startBtn.disabled = false;
-      startBtn.textContent = '면접 시작하기';
-    }
-  });
-
-
-  document.querySelector(".btn-primary").addEventListener("click", () => {
-    // 직무 선택
-    const jobRole = document.querySelector(".radio-group:nth-of-type(1) .radio-mock.selected")?.textContent ?? "백엔드";
-
-    // 기술 스택 (선택된 태그에서 ✕ 제거)
-    const techStack = [...document.querySelectorAll(".stack-tags .suggest-tag")]
-        .map(tag => tag.textContent.replace("✕", "").trim());
-
-    // 경력 연차
-    const experienceText = document.querySelector(".radio-group:nth-of-type(2) .radio-mock.selected")?.textContent ?? "신입";
-    const experienceYears = experienceText === "신입" ? 0
-        : experienceText === "1~3년" ? 1
-        : experienceText === "3~5년" ? 3
-        : 5;
-
-    // localStorage에 저장
+    // localStorage에 선택값 저장
     localStorage.setItem("job_role", jobRole);
-    localStorage.setItem("tech_stack", JSON.stringify(techStack));
+    localStorage.setItem("tech_stack", JSON.stringify(techStacks));
     localStorage.setItem("experience_years", experienceYears);
-});
+
+    // 면접 페이지로 이동 (세션 생성은 sound_detection.js 에서 처리)
+    window.location.href = '/pages/interview.html';
+  });
 </script>
 </body>
 </html>
