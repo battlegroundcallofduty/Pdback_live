@@ -3,7 +3,7 @@ const API_BASE = '/api/v1';
 // ── 유틸 ─────────────────────────────────────────────────────────────
 
 function getToken() {
-  return localStorage.getItem('access_token');
+  return localStorage.getItem('token');
 }
 
 function showError(msg) {
