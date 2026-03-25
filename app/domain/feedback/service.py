@@ -5,7 +5,7 @@ from fastapi import HTTPException
 
 from app.domain.feedback.schema import (
     FeedbackResponse, QuestionFeedbackResponse,
-    PostureSummaryResponse)
+    PostureSummaryResponse, HistoryResponse)
 from app.domain.feedback.models import (
     AiFeedback, PostureSummary,
     FeedbackDocument, QuestionFeedback)
@@ -18,6 +18,11 @@ from app.database import get_database
 # === router.py 함수 3개
 # 피드백 생성 메인 함수
 async def create_feedback(session_id: str, user_id: str) -> FeedbackResponse:
+    # 이미 생성된 피드백이 있다면 차단
+    db = get_database()
+    existing = await db["feedbacks"].find_one({"interview_id": session_id})
+    if existing:
+        raise HTTPException(status_code=409, detail="이미 생성된 피드백이 존재합니다. 히스토리 페이지를 참고해주세요.")
 
     interview = await _get_interview(session_id)          # 면접 데이터
     ai_feedback = await _generate_ai_feedback(interview)  # ai 피드백
@@ -42,7 +47,7 @@ async def get_feedback(interview_id: str, user_id: str) -> FeedbackResponse:
     # feedbacks 컬렉션에서 면접 id로 조회
     doc = await db["feedbacks"].find_one({"interview_id": interview_id})
     if doc is None:  # 피드백 데이터 에러!
-        raise ValueError(f"피드백 데이터를 찾을 수 없습니다: {interview_id}")
+        raise HTTPException(status_code=404, detail="피드백 데이터를 찾을 수 없습니다.")
     feedback_doc = FeedbackDocument(**doc)          # 피드백 데이터
 
     # (추가) 소유자 검증: 본인 피드백만 조회 가능
@@ -55,12 +60,14 @@ async def get_feedback(interview_id: str, user_id: str) -> FeedbackResponse:
 
 
 # 히스토리 목록 조회 (history.html)
-async def get_history(user_id: str) -> list[FeedbackResponse]:
+async def get_history(user_id: str, page: int = 1, size: int = 10) -> HistoryResponse:
     db = get_database()
 
-    # feedbacks 컬렉션에서 유저 id로 모든 피드백 조회/ docs: db에서 가져온 딕셔너리 목록
-    # (find는 포인터기 때문에 to_list로 실제 데이터 리스트로 꺼내기/ length: 몇개까지 가져올지)
-    docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
+    total = await db["feedbacks"].count_documents({"user_id": user_id})  # 전체 개수
+    skip = (page - 1) * size
+
+    # feedbacks 컬렉션에서 유저 id로 피드백 조회/ skip: 건너뛸 수, limit: 가져올 수
+    docs = await db["feedbacks"].find({"user_id": user_id}).skip(skip).limit(size).to_list(length=None)
 
     feedback_docs = [FeedbackDocument(**doc) for doc in docs]  # **: 딕셔너리를 풀어서 인자로 전달
     interview_ids = [f.interview_id for f in feedback_docs]    # feedbacks에서 interview_id 목록 추출
@@ -76,7 +83,7 @@ async def get_history(user_id: str) -> list[FeedbackResponse]:
             continue  # 면접 데이터가 없는 피드백 스킵!(거의 없는 경우인데 db 정리하다 생길수있음)
         result.append(_to_response(feedback_doc, interview))
 
-    return result
+    return HistoryResponse(items=result, total=total, page=page, size=size)
 
 
 
@@ -87,7 +94,7 @@ async def _get_interview(session_id: str) -> InterviewDocument:
     # 영진님이 id를 mongo db id가 아닌 uuid로 받으셔서 수정
     doc = await db["interviews"].find_one({"_id": session_id})
     if doc is None: # 면접 데이터 에러!
-        raise ValueError(f"면접 데이터를 찾을 수 없습니다: {session_id}")
+        raise HTTPException(status_code=404, detail="면접 데이터를 찾을 수 없습니다.")
     return InterviewDocument(**doc) # **: 딕셔너리를 풀어서 인자로 전달
 
 
@@ -117,8 +124,8 @@ async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
             model="gemini-3.1-flash-lite-preview",
             contents=prompt,
         )
-    except Exception as e:   # gemini 호출 실패 에러!
-        raise RuntimeError(f"Gemini API 호출에 실패했습니다. 잠시 후 다시 시도해주세요: {e}")
+    except Exception:   # gemini 호출 실패 에러!
+        raise HTTPException(status_code=502, detail="AI 피드백 생성에 실패했습니다. 잠시 후 다시 시도해주세요.")
 
     # gemini 응답이 마크다운 껍데기에 싸여서 나오는 경우 대비하여 파싱 코드
     # 파싱: 텍스트를 프로그램이 쓸 수 있는 구조로 변환하는것
@@ -130,31 +137,34 @@ async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
         raw = re.sub(r"\s*```$", "", raw).strip()     # 뒤쪽 ``` -> 빈 문자열로 대체
         try:
             data = json.loads(raw)                    # 'json 문자열' -> {python 딕셔너리}
-        except json.JSONDecodeError as e:             # json 파싱 실패 에러!
-            raise ValueError(f"Gemini 응답을 JSON으로 파싱할 수 없습니다: {e}")
+        except json.JSONDecodeError:             # json 파싱 실패 에러!
+            raise HTTPException(status_code=502, detail="AI 응답 처리에 실패했습니다. 잠시 후 다시 시도해주세요.")
 
-    question_feedbacks = []
-    # qf: 리스트 원소 하나하나/ "question_feedbacks": gemini 응답 json 키 이름, db 필드 이름
-    for qf in data["question_feedbacks"]:
-        question_feedbacks.append(
-            QuestionFeedback(
-                question_number=qf["question_number"],
-                score=qf["score"],
-                comment=qf["comment"],
+    try:
+        question_feedbacks = []
+        # qf: 리스트 원소 하나하나/ "question_feedbacks": gemini 응답 json 키 이름, db 필드 이름
+        for qf in data["question_feedbacks"]:
+            question_feedbacks.append(
+                QuestionFeedback(
+                    question_number=qf["question_number"],
+                    score=qf["score"],
+                    comment=qf["comment"],
+                )
             )
-        )
 
-    # 딕셔너리로 만들어야 항목별로 꺼내서 AiFeedback 객체(Pydantic) 생성 가능
-    return AiFeedback(
-        interview_score=data["interview_score"],
-        technical_score=data["technical_score"],
-        logic_score=data["logic_score"],
-        keyword_score=data["keyword_score"],
-        interview_comment=data["interview_comment"],
-        strengths=data["strengths"],
-        improvements=data["improvements"],
-        question_feedbacks=question_feedbacks,
-    )
+        # 딕셔너리로 만들어야 항목별로 꺼내서 AiFeedback 객체(Pydantic) 생성 가능
+        return AiFeedback(
+            interview_score=data["interview_score"],
+            technical_score=data["technical_score"],
+            logic_score=data["logic_score"],
+            keyword_score=data["keyword_score"],
+            interview_comment=data["interview_comment"],
+            strengths=data["strengths"],
+            improvements=data["improvements"],
+            question_feedbacks=question_feedbacks,
+        )
+    except KeyError:
+        raise HTTPException(status_code=502, detail="AI 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해주세요.")
 
 
 # 자세/태도 데이터 받은거 피드백으로 가공
