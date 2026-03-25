@@ -3,7 +3,7 @@ from datetime import datetime
 
 from app.database import get_database
 from app.domain.interview.models import Answer, InterviewDocument, Question
-from app.domain.interview.prompt import build_system_prompt, get_first_question_prompt
+from app.domain.interview.prompt import build_system_prompt, get_first_question_prompt, get_followup_prompt
 from fastapi import HTTPException
 
 from app.domain.interview.schema import (
@@ -13,10 +13,11 @@ from app.domain.interview.schema import (
     InterviewStartResponse,
 )
 from app.services.gemini import create_chat_session, ask_question
+from google.genai import types
 
 MAX_QUESTIONS = 5
 # 면접 세션을 생성하고 첫 질문을 반환한다.
-async def start_interview(request: InterviewStartRequest) -> InterviewStartResponse:
+async def start_interview(request: InterviewStartRequest, user_id: str) -> InterviewStartResponse:
     """면접 세션을 생성하고 첫 질문을 반환합니다."""
     # Gemini API 호출하여 첫 질문 생성
 
@@ -34,7 +35,7 @@ async def start_interview(request: InterviewStartRequest) -> InterviewStartRespo
     now = datetime.now()
 
     document = InterviewDocument(
-        user_id="anonymous",          # 추후 인증 붙이면 교체
+        user_id=user_id,   # router에서 받은 실제 user_id 사용      
         position=request.job_role,
         tech_stack=request.tech_stack,
         career_years=request.experience_years,
@@ -61,10 +62,11 @@ async def start_interview(request: InterviewStartRequest) -> InterviewStartRespo
     # 4. 응답 반환
     return InterviewStartResponse(
         session_id=session_id,
+        intro_message=get_first_question_prompt(),
         question=first_question,
     )
 
-    #raise NotImplementedError
+    
 
 #답변을 분석하고 꼬리 질문을 생성한다.
 async def submit_answer(request: AnswerRequest) -> AnswerResponse:
@@ -112,9 +114,15 @@ async def submit_answer(request: AnswerRequest) -> AnswerResponse:
     #    대화 이력을 Gemini history 형식으로 변환
     history = []
     for q in questions:
-        history.append({"role": "model", "parts": [q["question_content"]]})
+        history.append(types.Content(
+            role="model",
+            parts=[types.Part(text=q["question_content"])]
+        ))
         if q.get("answer"):
-            history.append({"role": "user", "parts": [q["answer"]["answer_content"]]})
+            history.append(types.Content(
+                role="user",
+                parts=[types.Part(text=q["answer"]["answer_content"])]
+            ))
 
     # 세션의 system_prompt 재생성 (Gemini는 대화 상태를 저장하지 않음)
 
@@ -123,8 +131,14 @@ async def submit_answer(request: AnswerRequest) -> AnswerResponse:
         experience_years=doc["career_years"],
         history=history)
     
-    follow_up_question = await ask_question(chat, request.answer_content)
+    current_question = questions[current_question_number - 1]["question_content"]
 
+    follow_up_question = await ask_question(
+        chat,
+        get_followup_prompt(current_question, request.answer_content)
+    )
+
+    
     # 5. 꼬리질문을 새 Question으로 MongoDB에 저장
     new_question = Question(
         question_number=current_question_number + 1,
