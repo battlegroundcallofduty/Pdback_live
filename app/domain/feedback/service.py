@@ -16,8 +16,8 @@ from app.database import get_database
 
 
 # === router.py 함수 3개
-# 피드백 생성 메인 함수
 async def create_feedback(session_id: str, user_id: str) -> FeedbackResponse:
+    """피드백 생성 메인 함수"""
     # 이미 생성된 피드백이 있다면 차단
     db = get_database()
     existing = await db["feedbacks"].find_one({"interview_id": session_id})
@@ -40,8 +40,8 @@ async def create_feedback(session_id: str, user_id: str) -> FeedbackResponse:
     return _to_response(feedback_doc, interview)   # 응답 형태로 변환
 
 
-# 피드백 결과 조회 (feedback.html)
 async def get_feedback(interview_id: str, user_id: str) -> FeedbackResponse:
+    """피드백 결과 조회 (feedback.html)"""
     db = get_database()
 
     # feedbacks 컬렉션에서 면접 id로 조회
@@ -59,8 +59,8 @@ async def get_feedback(interview_id: str, user_id: str) -> FeedbackResponse:
     return _to_response(feedback_doc, interview)
 
 
-# 히스토리 목록 조회 (history.html)
 async def get_history(user_id: str, page: int = 1, size: int = 10) -> HistoryResponse:
+    """히스토리 목록 조회 (history.html)"""
     db = get_database()
 
     total = await db["feedbacks"].count_documents({"user_id": user_id})  # 전체 개수
@@ -88,8 +88,8 @@ async def get_history(user_id: str, page: int = 1, size: int = 10) -> HistoryRes
 
 
 # === service.py 내부 함수 5개
-# 면접 데이터들 가져오기
 async def _get_interview(session_id: str) -> InterviewDocument:
+    """면접 데이터들 가져오기"""
     db = get_database()
     # 영진님이 id를 mongo db id가 아닌 uuid로 받으셔서 수정
     doc = await db["interviews"].find_one({"_id": session_id})
@@ -98,8 +98,8 @@ async def _get_interview(session_id: str) -> InterviewDocument:
     return InterviewDocument(**doc) # **: 딕셔너리를 풀어서 인자로 전달
 
 
-# gemini 여기서 한번 호출해서 필요한거 다 받기
 async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
+    """gemini 호출해서 필요한 데이터 받기"""
     # interview에서 질문/답변 목록 추출
     questions = [q.question_content for q in interview.questions]
     answers = []
@@ -167,8 +167,8 @@ async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
         raise HTTPException(status_code=502, detail="AI 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해주세요.")
 
 
-# 자세/태도 데이터 받은거 피드백으로 가공
 def _process_posture(interview) -> PostureSummary:
+    """자세/태도 데이터 받은거 피드백으로 가공"""
     posture_score = interview.posture_safety_rate
     eyes_score = interview.eye_contact
     attitude_score = round(eyes_score * 0.4 + posture_score * 0.6, 1)
@@ -201,9 +201,9 @@ def _process_posture(interview) -> PostureSummary:
     )
 
 
-# DB 데이터 -> 응답 변환
 # 수정, 검토중
 def _to_response(doc: FeedbackDocument, interview: InterviewDocument) -> FeedbackResponse:
+    """DB 데이터 -> 응답 변환"""
     # question_number 기준으로 model_answer 매핑 딕셔너리 생성
     model_answers = {q.question_number: q.model_answer for q in interview.questions}
     question_contents = {q.question_number: q.question_content for q in interview.questions}
@@ -241,8 +241,8 @@ def _to_response(doc: FeedbackDocument, interview: InterviewDocument) -> Feedbac
     )
 
 
-# mongo db에 피드백 저장
 async def _save_feedback(feedback: FeedbackDocument) -> str:
+    """mongo db에 피드백 저장"""
     db = get_database()
     # model_dump: 모델 객체들을 mongo db가 받을 수 있는 딕셔너리로 변환
     result = await db["feedbacks"].insert_one(feedback.model_dump())
