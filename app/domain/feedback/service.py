@@ -14,6 +14,8 @@ from app.domain.feedback.prompt import get_feedback_prompt
 from app.services.gemini import get_client
 from app.database import get_database
 
+GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+
 
 # === router.py 함수 3개
 async def create_feedback(session_id: str, user_id: str) -> FeedbackResponse:
@@ -129,11 +131,9 @@ async def _generate_ai_feedback(interview: InterviewDocument) -> AiFeedback:
     client = get_client()
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-3.1-flash-lite-preview",
+            model=GEMINI_MODEL,
             contents=prompt,
         )
-    except HTTPException:
-        raise
     except Exception:   # gemini 호출 실패 에러!
         raise HTTPException(status_code=502, detail="AI 피드백 생성에 실패했습니다. 잠시 후 다시 시도해주세요.")
 

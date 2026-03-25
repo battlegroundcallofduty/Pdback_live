@@ -270,6 +270,31 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
     border-left: 3px solid #2ed573;
 }
 
+/* 차트 섹션 */
+.chart-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid #eee;
+}
+.chart-section h3 { font-size: 14px; margin-bottom: 16px; }
+
+/* 피드백 페이지 하단 버튼 그룹 */
+.feedback-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+}
+.feedback-actions .btn-primary,
+.feedback-actions .btn-secondary {
+    display: inline-block;
+    text-decoration: none;
+    width: auto;
+    text-align: center;
+}
+
 /* 바 차트 값 표시 */
 .bar-item .bar-value {
     font-size: 11px;

@@ -141,7 +141,7 @@ function renderFeedback(data) {
     const item   = document.createElement('div');
     item.className = 'question-item';
     item.innerHTML = `
-      <div class="question-header" onclick="toggleQuestion(this)">
+      <div class="question-header">
         <span class="q-title">Q${qf.question_number}. ${escapeHtml(qf.question_content)}</span>
         <span class="q-score ${cls}">${Number(qf.score).toFixed(1)} / 10</span>
         <span class="q-toggle">▼</span>
@@ -162,6 +162,12 @@ function renderFeedback(data) {
       </div>
     `;
     qContainer.appendChild(item);
+  });
+
+  // 질문 아코디언 이벤트 위임 등록
+  qContainer.addEventListener('click', function(e) {
+    const header = e.target.closest('.question-header');
+    if (header) toggleQuestion(header);
   });
 
   // 콘텐츠 표시
