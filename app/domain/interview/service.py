@@ -17,7 +17,7 @@ from google.genai import types
 
 MAX_QUESTIONS = 5
 # 면접 세션을 생성하고 첫 질문을 반환한다.
-async def start_interview(request: InterviewStartRequest) -> InterviewStartResponse:
+async def start_interview(request: InterviewStartRequest, user_id: str) -> InterviewStartResponse:
     """면접 세션을 생성하고 첫 질문을 반환합니다."""
     # Gemini API 호출하여 첫 질문 생성
 
@@ -35,7 +35,7 @@ async def start_interview(request: InterviewStartRequest) -> InterviewStartRespo
     now = datetime.now()
 
     document = InterviewDocument(
-        user_id="anonymous",          # 추후 인증 붙이면 교체
+        user_id=user_id,   # router에서 받은 실제 user_id 사용      
         position=request.job_role,
         tech_stack=request.tech_stack,
         career_years=request.experience_years,
