@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.domain.user.dependency import get_current_user
-from fastapi import Depends
+from app.domain.interview.service import start_interview, submit_answer
 
 from app.domain.interview.schema import (
     AnswerRequest,
@@ -8,7 +8,7 @@ from app.domain.interview.schema import (
     InterviewStartRequest,
     InterviewStartResponse,
 )
-from app.domain.interview.service import start_interview, submit_answer
+
 
 router = APIRouter(prefix="/interview", tags=["Interview"])
 
