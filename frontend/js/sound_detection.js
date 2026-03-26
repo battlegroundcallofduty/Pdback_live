@@ -1,3 +1,9 @@
+// 로그인 체크
+if (!localStorage.getItem('access_token')) {
+    alert('로그인이 필요합니다.');
+    window.location.href = '/login';
+}
+
 // DOM 요소
 const chatMessages = document.querySelector(".chat-messages");
 const sessionIdInput = document.getElementById("session-id");
@@ -46,7 +52,7 @@ try {
     const res = await fetch("/api/v1/interview/start", {
         method: "POST",
         headers: { "Content-Type": "application/json",
-             "Authorization": `Bearer ${localStorage.getItem('token')}`
+             "Authorization": `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify({
             job_role: jobRole,
@@ -79,7 +85,8 @@ if (submitBtn) {
 
         const res = await fetch("/api/v1/interview/answer", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('access_token')}`},
             body: JSON.stringify({
                 session_id: sessionIdInput.value,
                 answer_content: answerText,
