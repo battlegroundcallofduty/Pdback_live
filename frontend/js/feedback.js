@@ -79,7 +79,7 @@ function renderFeedback(data) {
   // 점수 카드
   const techScore     = Number(data.technical_score).toFixed(1);
   const logicScore    = Number(data.logic_score).toFixed(1);
-  const attitudeScore = (data.posture_summary.attitude_score / 10).toFixed(1);
+  const attitudeScore = Number(data.posture_summary.attitude_score).toFixed(1);
 
   document.getElementById('tech-score').textContent     = techScore;
   document.getElementById('logic-score').textContent    = logicScore;
