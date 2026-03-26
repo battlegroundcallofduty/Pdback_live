@@ -22,6 +22,7 @@ async def api_start_interview(
 
 
 @router.post("/answer", response_model=AnswerResponse)
-async def api_submit_answer(request: AnswerRequest):
+async def api_submit_answer(request: AnswerRequest,
+                            user_id: str = Depends(get_current_user)):
     """답변을 제출하고 꼬리 질문을 받습니다."""
-    return await submit_answer(request)
+    return await submit_answer(request, user_id)

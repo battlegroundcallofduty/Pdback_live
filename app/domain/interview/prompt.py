@@ -35,6 +35,8 @@ SYSTEM_PROMPT_TEMPLATE = """
 - 질문만 출력 (설명, 번호, 인사말 없이)
 - 한국어로만 응답
 """.strip()
+#프롬프트 시작 문구
+INTERVIEW_INTRO_MESSAGE = "안녕하세요! 면접을 시작하겠습니다."
 
 # 면접 설정 페이지에서 받은 직무, 기술스택, 경력 값을 시스템 프롬프트 빈칸에 채워서 완성된 프롬프트 문자열을 반환하는 함수
 def build_system_prompt(
