@@ -1,10 +1,17 @@
 import uuid
 from datetime import datetime
 
+from fastapi import HTTPException
+from google.genai import types
+
 from app.database import get_database
 from app.domain.interview.models import Answer, InterviewDocument, Question
-from app.domain.interview.prompt import build_system_prompt, get_first_question_prompt, get_followup_prompt
-from fastapi import HTTPException
+from app.domain.interview.prompt import (
+    INTERVIEW_INTRO_MESSAGE, 
+    get_first_question_prompt, 
+    get_followup_prompt,
+    build_system_prompt
+)
 
 from app.domain.interview.schema import (
     AnswerRequest,
@@ -13,7 +20,7 @@ from app.domain.interview.schema import (
     InterviewStartResponse,
 )
 from app.services.gemini import create_chat_session, ask_question
-from google.genai import types
+
 
 MAX_QUESTIONS = 5
 # 면접 세션을 생성하고 첫 질문을 반환한다.
@@ -44,7 +51,7 @@ async def start_interview(request: InterviewStartRequest, user_id: str) -> Inter
                 question_number=1,
                 question_content=first_question,
                 category="기술",
-                expected_duration_seconds=120,
+                expected_duration_seconds=60,
                 created_at=now,
                 model_answer="",      # 추후 Gemini로 모범답안 생성 가능
                 question_keywords=[],
@@ -62,21 +69,21 @@ async def start_interview(request: InterviewStartRequest, user_id: str) -> Inter
     # 4. 응답 반환
     return InterviewStartResponse(
         session_id=session_id,
-        intro_message=get_first_question_prompt(),
+        intro_message=INTERVIEW_INTRO_MESSAGE,
         question=first_question,
     )
 
     
 
 #답변을 분석하고 꼬리 질문을 생성한다.
-async def submit_answer(request: AnswerRequest) -> AnswerResponse:
+async def submit_answer(request: AnswerRequest, user_id: str) -> AnswerResponse:
     """답변을 분석하고 꼬리 질문을 생성합니다."""
     db = get_database()
     now = datetime.now()
 
     # 1. MongoDB에서 세션 조회
     doc = await db["interviews"].find_one({"_id": request.session_id})
-    if doc is None:
+    if doc["user_id"] != user_id:
         raise HTTPException(status_code=404, detail=f"세션을 찾을 수 없습니다: {request.session_id}")
 
 
@@ -84,12 +91,19 @@ async def submit_answer(request: AnswerRequest) -> AnswerResponse:
     current_question_number = len(questions)  # 현재까지 질문 수
 
     # 2. 현재 질문에 답변 저장
+
+    # 현재 질문의 created_at = 사용자가 질문을 받은 시점 = 답변 시작 시점
+    question_created_at = questions[current_question_number - 1]["created_at"]
+    started_at = question_created_at if isinstance(question_created_at, datetime) else datetime.fromisoformat(str(question_created_at))
+    ended_at = now
+    duration_seconds = int((ended_at - started_at).total_seconds())
+
     answer = Answer(
         answer_content=request.answer_content,
         stt_raw_text=request.stt_raw_text,
-        started_at=now,   # 백엔드에서 현재 시간으로 처리
-        ended_at=now,
-        duration_seconds=0, # ended_at - started_at
+        started_at=started_at,   # 백엔드에서 현재 시간으로 처리
+        ended_at=ended_at,
+        duration_seconds=duration_seconds, # ended_at - started_at
         status="submitted",
     )
 
@@ -144,7 +158,7 @@ async def submit_answer(request: AnswerRequest) -> AnswerResponse:
         question_number=current_question_number + 1,
         question_content=follow_up_question,
         category="기술",
-        expected_duration_seconds=120,
+        expected_duration_seconds=60,
         created_at=now,
         model_answer="",
         question_keywords=[],
