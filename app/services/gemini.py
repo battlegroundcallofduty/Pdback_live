@@ -1,5 +1,6 @@
 from google import genai
 from google.genai import types
+from google.genai.chats import AsyncChat
 
 from app.config import settings
 from app.domain.interview.prompt import build_system_prompt
@@ -22,11 +23,11 @@ def get_client() -> genai.Client:
 
 # 면접관 페르소나 설정 후 Gemini 대화 세션을 생성하는 함수
 async def create_chat_session(
-    job_role: str,  # 직무명
-    tech_stack: list[str], # 기술 스택
-    experience_years: int, # 경력
-    history: list[dict] | None = None
-):
+    job_role: str,          #직무
+    tech_stack: list[str],  #기술 스택
+    experience_years: int,  #경력
+    history: list[types.Content] | None = None  # list[dict] → list[types.Content]
+) -> AsyncChat:  # 반환 타입 추가
     """면접관 페르소나가 설정된 Gemini 대화 세션 생성"""
     history = history or []
 
@@ -49,7 +50,7 @@ async def create_chat_session(
 
 # Gemini한테 말 걸고 대답 받아오는 함수
 async def ask_question(
-    chat,           # 반드시 create_chat_session() 반환값을 넣어야 함
+    chat: AsyncChat,
     prompt: str,    # Gemini한테 보낼 메시지
 ) -> str:
     """Gemini에게 질문을 요청하고 응답을 반환합니다."""
