@@ -313,6 +313,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
 .score-badge.mid { background: #fff8e8; color: #f0a030; }
 .score-badge.low { background: #ffe8e8; color: #ff4757; }
 
+.btn-detail { color: #4A6CF7; font-size: 13px; font-weight: 600; text-decoration: none; }
+.btn-detail:hover { text-decoration: underline; }
+.pagination { display: flex; justify-content: center; gap: 6px; margin-top: 24px; }
+.pagination button { background: #f0f0f0; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+.pagination button:hover { background: #e0e0e0; }
+.pagination button.active { background: #4A6CF7; color: #fff; border-color: #4A6CF7; }
+
 /* Mypage */
 .profile-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
 .profile-card { background: #f8f9fa; border-radius: 12px; padding: 32px; text-align: center; border: 1px solid #eee; height: fit-content; }
