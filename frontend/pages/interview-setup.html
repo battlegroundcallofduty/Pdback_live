@@ -14,7 +14,7 @@
     <a href="/start" class="active">면접 시작</a>
     <a href="/history">히스토리</a>
     <a href="/mypage">마이페이지</a>
-    <a href="/login">로그인</a>
+    <a href="/login" id="auth-btn">로그인</a>
   </div>
 </nav>
 
@@ -73,6 +73,12 @@
 </div>
 
 <script>
+  // 로그인 체크
+  if (!localStorage.getItem('access_token')) {
+      alert('로그인이 필요합니다.');
+      window.location.href = '/login';
+  }
+
   // ========================================
   // 1. 직무별 기술 스택 목록
   // ========================================
@@ -256,5 +262,6 @@
     window.location.href = '/interview';
   });
 </script>
+<script src="/js/auth-nav.js"></script>
 </body>
 </html>
