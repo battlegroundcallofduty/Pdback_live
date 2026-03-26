@@ -46,7 +46,7 @@ try {
     const res = await fetch("/api/v1/interview/start", {
         method: "POST",
         headers: { "Content-Type": "application/json",
-             "Authorization": `Bearer ${localStorage.getItem('token')}`
+             "Authorization": `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify({
             job_role: jobRole,
@@ -79,7 +79,8 @@ if (submitBtn) {
 
         const res = await fetch("/api/v1/interview/answer", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('access_token')}`},
             body: JSON.stringify({
                 session_id: sessionIdInput.value,
                 answer_content: answerText,
