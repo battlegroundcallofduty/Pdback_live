@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from app.domain.user.dependency import get_current_user
+from fastapi import Depends
 
 from app.domain.interview.schema import (
     AnswerRequest,
@@ -12,9 +14,11 @@ router = APIRouter(prefix="/interview", tags=["Interview"])
 
 
 @router.post("/start", response_model=InterviewStartResponse)
-async def api_start_interview(request: InterviewStartRequest):
-    """면접을 시작하고 첫 번째 질문을 반환합니다."""
-    return await start_interview(request)
+async def api_start_interview(
+    request: InterviewStartRequest,
+    user_id: str = Depends(get_current_user)   # 토큰 검증 + user_id 추출
+):
+    return await start_interview(request, user_id)
 
 
 @router.post("/answer", response_model=AnswerResponse)
