@@ -1,3 +1,9 @@
+// 로그인 체크
+if (!localStorage.getItem('access_token')) {
+    alert('로그인이 필요합니다.');
+    window.location.href = '/login';
+}
+
 // DOM 요소
 const chatMessages = document.querySelector(".chat-messages");
 const sessionIdInput = document.getElementById("session-id");
