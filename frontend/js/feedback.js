@@ -5,6 +5,18 @@ const API_BASE = '/api/v1';
 function getToken() {
   return localStorage.getItem('token');
 }
+// 로그아웃 연결 js
+async function logout() {
+  const token = getToken();
+  if (token) {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).catch(() => {});
+  }
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+}
 
 function showError(msg) {
   document.getElementById('loading-state').style.display = 'none';
