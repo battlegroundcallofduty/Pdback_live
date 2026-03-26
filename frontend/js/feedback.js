@@ -3,18 +3,22 @@ const API_BASE = '/api/v1';
 // ── 유틸 ─────────────────────────────────────────────────────────────
 
 function getToken() {
-  return localStorage.getItem('token');
+  return localStorage.getItem('access_token');
 }
-// 로그아웃 연결 js
-async function logout() {
+
+// 로그아웃 링크 연결
+window.logout = async function() {
   const token = getToken();
-  if (token) {
+  try {
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
-    }).catch(() => {});
+    });
+  } catch (error) {
+    // 로그아웃 요청 실패해도 토큰 삭제 후 로그인페이지 이동(유선님따라 추가^^)
   }
-  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
   window.location.href = '/login';
 }
 

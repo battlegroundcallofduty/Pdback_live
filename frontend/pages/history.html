@@ -52,19 +52,6 @@
   </div>
 </div>
 
-<script>
-  const API_BASE = '/api/v1';
-  async function logout() {
-    const token = localStorage.getItem('token');
-    if (token) {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      }).catch(() => {});
-    }
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  }
-</script>
+<script src="../js/history.js"></script>
 </body>
 </html>
