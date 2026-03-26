@@ -91,7 +91,13 @@ async def get_me(user_id: str) -> UserResponse:
     return UserResponse.model_validate(user)
 
 # 프로필수정(이름, 비밀번호 변경)
-async def update_me(user_id:str, username: str | None = None, position: str | None = None,current_password : str | None = None, new_password: str | None = None) -> UserResponse:
+async def update_me(
+    user_id: str,
+    username: str | None = None,
+    position: str | None = None,
+    current_password: str | None = None,
+    new_password: str | None = None
+) -> UserResponse:
     """현재 로그인한 사용자의 프로필(이름/비밀번호)을 수정"""
     db = get_database()
     user = await db["users"].find_one({"_id": ObjectId(user_id)})

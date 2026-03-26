@@ -9,7 +9,7 @@ class UserRegister(BaseModel):
     username: str = Field(..., min_length=2)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    position: Literal["backend", "frontend", "fullstack", "data","devops"] | None = None
+    position: Literal["backend", "frontend", "fullstack", "data", "devops"] | None = None
 
 # 2. 로그인 입력값
 class UserLogin(BaseModel):
@@ -25,7 +25,7 @@ class UserResponse(BaseModel):
     email: str
     role: Literal["candidate", "admin"]
     is_active: bool
-    position: Literal["backend", "frontend", "fullstack", "data","devops"] | None = None
+    position: Literal["backend", "frontend", "fullstack", "data", "devops"] | None = None
     last_login: datetime | None = None
     created_at: datetime
     updated_at: datetime
@@ -39,7 +39,7 @@ class UserUpdate(BaseModel):
     username: str | None = None
     current_password: str | None = None
     new_password: str | None = Field(default=None, min_length=8)
-    position: Literal["backend", "frontend", "fullstack", "data","devops"] | None = None
+    position: Literal["backend", "frontend", "fullstack", "data", "devops"] | None = None
 
 # 5. 비밀번호 재확인(탈퇴 시)
 class UserDelete(BaseModel):

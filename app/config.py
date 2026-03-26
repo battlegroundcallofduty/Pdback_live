@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     # JWT
     # 기본값 제거, .env에 값이 있어야 작동
     SECRET_KEY: str
+
+    # Token
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7 #MINUTES로 관리하면 조금 더 세밀하게 조절가능
     
     # MongoDB
     MONGODB_URL: str = "mongodb://localhost:27017"
