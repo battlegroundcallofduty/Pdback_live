@@ -93,11 +93,7 @@
             localStorage.setItem('refresh_token', data.refresh_token);
             window.location.href = '/start'; //면접페이지로 이동
           } else {
-            if (typeof data.detail === 'string') {
-              alert(data.detail);
-            } else {
-              alert('포지션은 backend, frontend, fullstack, data, devops 중 하나를 입력해주세요.');
-            }
+            alert(data.detail);
           }
         } catch (e) {
           alert('네트워크 오류가 발생했습니다.'); 

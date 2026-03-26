@@ -16,7 +16,7 @@ class UserDocument(BaseModel):
     is_active: bool = Field(default=True, description="계정 활성 여부")
 
     # 로그 및 기록
-    # lambda없이 사용해야 객체 생성할 때마다 그 시간으로 실행(없으면 서버 시작시점 시간으로 고정)
+    # lambda로 감싸야 객체 생성할 때마다 그 시간으로 실행(없으면 서버 시작시점 시간으로 고정)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_login: datetime | None = None

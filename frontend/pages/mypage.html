@@ -281,7 +281,8 @@
           return;
         }
 
-        localStorage.removeItem('token'); //토큰 삭제하고
+        localStorage.removeItem('access_token'); //토큰 삭제하고
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login'; //로그인페이지 이동
       });
       
