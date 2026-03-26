@@ -8,6 +8,7 @@ const submitBtn = document.getElementById("submit-btn");
 // 음성 인식 상태
 let finalTranscript = "";
 let isStopped = false;
+let recognition = null;
 
 // AI 말풍선을 채팅창에 추가
 function addAIBubble(text) {
@@ -41,19 +42,29 @@ async function startInterview() {
     const techStack = JSON.parse(localStorage.getItem("tech_stack") ?? '["Python"]');
     const experienceYears = parseInt(localStorage.getItem("experience_years") ?? "0");
 
+try {
     const res = await fetch("/api/v1/interview/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+             "Authorization": `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
             job_role: jobRole,
             tech_stack: techStack,
-            experience_years: experienceYears
-        })
-    });
+            experience_years: experienceYears})
+        });
+    if (!res.ok) {
+        addAIBubble("면접을 시작할 수 없습니다. 페이지를 새로고침 해주세요.");
+        return;
+    } 
     const data = await res.json();
     sessionIdInput.value = data.session_id;
     addAIBubble(data.intro_message);
     addAIBubble(data.question);
+    
+    } catch (e) {
+    addAIBubble("서버에 연결할 수 없습니다. 네트워크를 확인해주세요.");
+    }
 }
 
 // 완료 버튼 → 답변 제출 후 꼬리질문 받기
@@ -61,6 +72,7 @@ if (submitBtn) {
     submitBtn.addEventListener("click", async () => {
         if (!finalTranscript.trim()) return;
 
+        try {
         const answerText = finalTranscript;
         addUserBubble(answerText);
         clearTranscript();
@@ -73,14 +85,22 @@ if (submitBtn) {
                 answer_content: answerText,
             })
         });
+        if (!res.ok) {
+            addAIBubble("답변 제출에 실패했습니다. 다시 시도해주세요.");
+            return;
+        }
         const data = await res.json();
 
         if (data.is_finished) {
             addAIBubble("면접이 종료되었습니다. 수고하셨습니다!");
             isStopped = true;
+            if (recognition) {recognition.stop();}
         } else {
             addAIBubble(data.follow_up_question);
         }
+    } catch (e) {
+        addAIBubble("서버에 연결할 수 없습니다. 네트워크를 확인해주세요.")
+    }
     });
 }
 
@@ -90,7 +110,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 if (!SpeechRecognition) {
     if (interimSpan) interimSpan.textContent = "이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)";
 } else {
-    const recognition = new SpeechRecognition();
+    recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "ko-KR";
@@ -111,11 +131,14 @@ if (!SpeechRecognition) {
     };
 
     recognition.onerror = function(event) {
-        if (interimSpan) interimSpan.textContent = "오류: " + event.error;
+        if (interimSpan){
+            interimSpan.textContent = "오류: " + event.error;
+            isStopped = true;}
     };
 
     recognition.onend = function() {
-        if (!isStopped) recognition.start();
+        if (!isStopped){
+            recognition.start();}
     };
 
     recognition.start();
