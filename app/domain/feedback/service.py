@@ -118,7 +118,11 @@ async def get_user_stats(user_id: str) -> UserStatsResponse:
     # 이번 주 월요일 00:00 (KST)
     now = datetime.now(KST)
     week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-    weekly_count = sum(1 for doc in docs if doc.get("created_at") and doc["created_at"] >= week_start)
+    weekly_count = sum(
+        1 for doc in docs
+        if doc.get("created_at")
+        and doc["created_at"].replace(tzinfo=doc["created_at"].tzinfo or KST) >= week_start
+    )
 
     return UserStatsResponse(total_count=total_count, avg_score=avg_score, best_score=best_score, weekly_count=weekly_count)
 

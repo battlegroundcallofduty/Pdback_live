@@ -138,7 +138,7 @@ async def submit_answer(request: AnswerRequest, user_id: str) -> AnswerResponse:
             
         await db["interviews"].update_one(
             {"_id": request.session_id},
-            {"$set": {"status": "finished", "finished_at": now}},
+            {"$set": update_fields},
         )
         return AnswerResponse(is_finished=True)
 
