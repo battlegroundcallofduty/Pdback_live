@@ -77,12 +77,16 @@ function renderFeedback(data) {
     `${interviewDate}  |  ${jobRole}  |  ${techStack.length ? techStack.join(', ') : '-'}  |  경력 ${expYears}년`;
 
   // 점수 카드
+  const overallScore  = Number(data.interview_score).toFixed(1);
   const techScore     = Number(data.technical_score).toFixed(1);
   const logicScore    = Number(data.logic_score).toFixed(1);
+  const keywordScore  = Number(data.keyword_score).toFixed(1);
   const attitudeScore = Number(data.posture_summary.attitude_score).toFixed(1);
 
+  document.getElementById('overall-score').textContent  = overallScore;
   document.getElementById('tech-score').textContent     = techScore;
   document.getElementById('logic-score').textContent    = logicScore;
+  document.getElementById('keyword-score').textContent  = keywordScore;
   document.getElementById('attitude-score').textContent = attitudeScore;
 
   // 바 차트 (최대 높이 160px)
