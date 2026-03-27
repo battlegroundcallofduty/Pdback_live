@@ -92,8 +92,9 @@ function renderTrendChart(items) {
     return;
   }
 
-  // API는 최신순이므로 차트는 오래된 순(왼쪽→오른쪽)으로 뒤집기
-  const sorted = [...items].reverse();
+  // 최신 5개만 자르고, 차트는 오래된 순(왼쪽→오른쪽)으로 뒤집기
+  const CHART_LIMIT = 5;
+  const sorted = [...items].slice(0, CHART_LIMIT).reverse();
 
   const W = 600, H = 140;
   const PAD = { top: 20, right: 20, bottom: 30, left: 30 };
@@ -127,6 +128,7 @@ function renderTrendChart(items) {
       <polyline points="${polyline}" fill="none" stroke="#4A6CF7" stroke-width="2"/>
       ${circles}
       ${xLabels}
+      <text x="${W - PAD.right}" y="${PAD.top - 6}" text-anchor="end" font-size="10" fill="#bbb">최근 ${sorted.length}개 면접 기준</text>
     </svg>
   `;
 }

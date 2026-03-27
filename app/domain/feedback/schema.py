@@ -54,6 +54,7 @@ class FeedbackResponse(BaseModel):
     interview_id: str
     position: str
     tech_stack: list[str]
+    career_years: int
 
     # AI 피드백 점수 (models.AiFeedback 필드명과 통일)
     interview_score: float

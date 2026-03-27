@@ -262,6 +262,7 @@ def _to_response(doc: FeedbackDocument, interview: InterviewDocument) -> Feedbac
         interview_id=doc.interview_id,
         position=interview.position,
         tech_stack=interview.tech_stack,
+        career_years=interview.career_years,
         interview_score=doc.ai_feedback.interview_score,
         technical_score=doc.ai_feedback.technical_score,
         logic_score=doc.ai_feedback.logic_score,
