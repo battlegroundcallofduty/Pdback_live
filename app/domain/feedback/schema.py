@@ -39,6 +39,7 @@ class UserStatsResponse(BaseModel):
     total_count: int    # 총 면접 횟수
     avg_score: float    # 전체 interview_score 평균
     best_score: float   # 전체 interview_score 최고점
+    weekly_count: int   # 이번 주 면접 횟수
 
 
 class FeedbackRequest(BaseModel):

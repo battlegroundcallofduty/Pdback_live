@@ -32,7 +32,7 @@ async def api_get_history(
 # /feedback/stats
 @router.get("/stats", response_model=UserStatsResponse)
 async def api_get_user_stats(current_user: str = Depends(get_current_user)):
-    """마이페이지 통계 (총 면접횟수, 평균점수, 최고점수)"""
+    """마이페이지 통계 (총 면접횟수, 평균점수, 최고점수, 이번주 면접횟수)"""
     return await get_user_stats(current_user)
 
 
