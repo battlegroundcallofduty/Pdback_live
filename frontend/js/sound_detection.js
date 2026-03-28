@@ -156,6 +156,8 @@ if (data.is_finished) {
         if (modalTitle) modalTitle.textContent = "면접 종료!";
         if (modalDesc) modalDesc.textContent = `모든 ${MAX_SESSIONS}개 세션이 완료되었습니다. 수고하셨습니다!`;
         if (nextSessionBtn) nextSessionBtn.textContent = "히스토리로 이동";
+        const feedbackBtn = document.getElementById("feedback-btn");
+        if (feedbackBtn) feedbackBtn.style.display = "block";
     }
     if (modal) modal.style.display = "flex";
     if (nextSessionBtn) nextSessionBtn.disabled = false;
@@ -236,6 +238,14 @@ if (nextSessionBtn) {
     });
 }
 
+
+// 피드백 버튼 이벤트
+const feedbackBtn = document.getElementById("feedback-btn");
+if (feedbackBtn) {
+    feedbackBtn.addEventListener("click", function () {
+        window.location.href = `/feedback?id=${sessionIdInput.value}`;
+    });
+}
 
 // 스페이스바 단축키
 document.addEventListener("keydown", function(e) {
