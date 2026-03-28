@@ -328,8 +328,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
 .feedback-actions .btn-secondary {
     display: inline-block;
     text-decoration: none;
-    width: auto;
+    width: 180px;
     text-align: center;
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
 }
 
 /* 바 차트 값 표시 */
