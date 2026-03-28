@@ -46,12 +46,8 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
 }
-let currentSession = 1;
 const MAX_QUESTIONS = 5;
-const MAX_SESSIONS = 1;
 const questionCounter = document.querySelector(".chat-header span");
-const sessionCounter = document.getElementById("session-counter");
-if (sessionCounter) sessionCounter.textContent = `세션 ${currentSession}/${MAX_SESSIONS}`;
 
 // AI 말풍선을 채팅창에 추가
 function addAIBubble(text) {
@@ -145,20 +141,12 @@ if (data.is_finished) {
     const modalTitle = document.getElementById("session-modal-title");
     const modalDesc = document.getElementById("session-modal-desc");
 
-    if (currentSession < MAX_SESSIONS) {
-        addAIBubble(`${currentSession}/${MAX_SESSIONS} 세션 완료! 수고하셨습니다.`);
-        if (modalTitle) modalTitle.textContent = `세션 ${currentSession}/${MAX_SESSIONS} 완료!`;
-        if (modalDesc) modalDesc.textContent = "수고하셨습니다. 다음 세션을 시작하시겠습니까?";
-        if (nextSessionBtn) nextSessionBtn.textContent = "다음 세션 시작";
-    } else {
-        addAIBubble(`모든 ${MAX_SESSIONS}개 세션이 종료되었습니다. 수고하셨습니다!`);
-        localStorage.removeItem("current_session");
-        if (modalTitle) modalTitle.textContent = "면접 종료!";
-        if (modalDesc) modalDesc.textContent = `모든 ${MAX_SESSIONS}개 세션이 완료되었습니다. 수고하셨습니다!`;
-        if (nextSessionBtn) nextSessionBtn.textContent = "히스토리로 이동";
-        const feedbackBtn = document.getElementById("feedback-btn");
-        if (feedbackBtn) feedbackBtn.style.display = "block";
-    }
+    addAIBubble("면접이 종료되었습니다. 수고하셨습니다!");
+    if (modalTitle) modalTitle.textContent = "면접 종료!";
+    if (modalDesc) modalDesc.textContent = "수고하셨습니다!";
+    if (nextSessionBtn) nextSessionBtn.textContent = "히스토리로 이동";
+    const feedbackBtn = document.getElementById("feedback-btn");
+    if (feedbackBtn) feedbackBtn.style.display = "block";
     if (modal) modal.style.display = "flex";
     if (nextSessionBtn) nextSessionBtn.disabled = false;
 } else {
@@ -229,12 +217,7 @@ if (nextSessionBtn) {
             // 피드백 저장 실패해도 이동은 진행
         }
 
-        if (currentSession < MAX_SESSIONS) {
-            localStorage.setItem("current_session", currentSession + 1);
-            window.location.href = '/interview';
-        } else {
-            window.location.href = '/history';
-        }
+        window.location.href = '/history';
     });
 }
 
