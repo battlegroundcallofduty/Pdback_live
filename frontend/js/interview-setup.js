@@ -123,10 +123,6 @@ startBtn.addEventListener('click', () => {
     alert('기술 스택을 1개 이상 선택해주세요.');
     return;
   }
-  if (cameraStatus.textContent === '확인 중...') {
-    alert('카메라 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
-    return;
-  }
   if (micStatus.textContent === '확인 중...') {
     alert('마이크 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
     return;
