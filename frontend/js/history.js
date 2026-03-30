@@ -42,7 +42,8 @@ function renderTable(items) {
       year: 'numeric', month: '2-digit', day: '2-digit'
     });
     const techStack     = (item.tech_stack || []).join(', ') || '-';
-    const careerYears   = item.career_years != null ? `${item.career_years}년` : '-';
+    const careerMap     = { 0: '신입', 1: '1~3년', 3: '3~5년', 5: '5년 이상' };
+    const careerYears   = item.career_years != null ? (careerMap[item.career_years] ?? `${item.career_years}년`) : '-';
     const overallScore  = Number(item.interview_score).toFixed(1);
     const attitudeScore = Number(item.posture_summary.attitude_score).toFixed(1);
     const avgScore      = ((item.interview_score + item.posture_summary.attitude_score) / 2).toFixed(1);
