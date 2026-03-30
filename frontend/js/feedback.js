@@ -45,10 +45,11 @@ function renderFeedback(data) {
   // 헤더 서브타이틀 (API 응답 데이터 사용)
   const interviewDate = new Date(data.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
   const techStack     = (data.tech_stack || []).join(', ') || '-';
-  const expYears      = data.career_years ?? '-';
+  const careerMap  = { 0: '신입', 1: '1~3년', 3: '3~5년', 5: '5년 이상' };
+  const expLabel   = data.career_years != null ? (careerMap[data.career_years] ?? `${data.career_years}년`) : '-';
 
   document.getElementById('feedback-subtitle').textContent =
-    `${interviewDate}  |  ${data.position || '-'}  |  ${techStack}  |  경력 ${expYears}년`;
+    `${interviewDate}  |  ${data.position || '-'}  |  ${techStack}  |  ${expLabel}`;
 
   // 점수 카드
   const overallScore  = Number(data.interview_score).toFixed(1);
