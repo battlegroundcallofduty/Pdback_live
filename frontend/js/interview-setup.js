@@ -104,16 +104,6 @@ const cameraStatus = permItems[0].querySelector('.perm-status');
 let isMicAllowed = false;
 let isCameraAllowed = false;
 
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then((stream) => {
-    isCameraAllowed = true;
-    cameraStatus.textContent = '✓ 허용됨';
-    stream.getTracks().forEach(track => track.stop());
-  })
-  .catch(() => {
-    cameraStatus.textContent = '✗ 거부됨';
-  });
-
 navigator.mediaDevices.getUserMedia({ audio: true })
   .then((stream) => {
     isMicAllowed = true;
@@ -124,12 +114,22 @@ navigator.mediaDevices.getUserMedia({ audio: true })
     micStatus.textContent = '✗ 거부됨';
   });
 
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then((stream) => {
+    isCameraAllowed = true;
+    cameraStatus.textContent = '✓ 허용됨';
+    stream.getTracks().forEach(track => track.stop());
+  })
+  .catch(() => {
+    cameraStatus.textContent = '✗ 거부됨';
+  });
+
 // ========================================
 // 7. 면접 시작하기 버튼 클릭 이벤트
 // ========================================
 const startBtn = document.querySelector('.btn-primary');
 
-startBtn.addEventListener('click', () => {
+startBtn.addEventListener('click', async () => {
   const jobRole = jobRoleGroup.querySelector('.radio-mock.selected')?.textContent.trim();
   const experienceText = experienceGroup.querySelector('.radio-mock.selected')?.textContent.trim();
   const experienceMap = { '신입': 0, '1~3년': 1, '3~5년': 3, '5년 이상': 5 };
@@ -147,11 +147,13 @@ startBtn.addEventListener('click', () => {
     alert('마이크 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
     return;
   }
-  if (!isMicAllowed) {
+  const micPerm = await navigator.permissions.query({ name: 'microphone' });
+  if (micPerm.state !== 'granted') {
     alert('마이크 권한은 필수입니다. 허용 후 페이지를 새로고침 해주세요.');
     return;
   }
-  if (!isCameraAllowed) {
+  const camPerm = await navigator.permissions.query({ name: 'camera' });
+  if (camPerm.state !== 'granted') {
     const proceed = confirm('카메라가 허용되지 않았습니다.\n카메라 없이 진행하면 태도 점수가 0점 처리될 수 있습니다.\n그래도 진행하시겠습니까?');
     if (!proceed) return;
   }
