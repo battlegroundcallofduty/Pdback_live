@@ -140,7 +140,7 @@ startBtn.addEventListener('click', () => {
     return;
   }
   if (!isMicAllowed) {
-    alert('마이크 권한을 허용한 후, 페이지를 새로고침 해주세요.');
+    alert('마이크 권한은 필수입니다. 허용 후 페이지를 새로고침 해주세요.');
     return;
   }
   if (!isCameraAllowed) {
