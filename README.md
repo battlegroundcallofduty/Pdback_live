@@ -8,8 +8,10 @@
 ## 목차
 
 - [프로젝트 소개](#프로젝트-소개)
+- [관련 문서](#관련-문서)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
+- [화면 구성](#화면-구성)
 - [주요 기능](#주요-기능)
 - [내 담당 기능 상세](#내-담당-기능-상세)
 - [API 엔드포인트](#api-엔드포인트)
@@ -36,6 +38,14 @@ MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성
 | 김평일 | Gemini 프롬프트 설계, 면접 설정 페이지, Gemini API 클라이언트 |
 | 이영진 | 면접 세션 진행 (interview 도메인 백엔드 + 프론트엔드, 면접관 페르소나) |
 | 박지영 | 피드백 생성 / 조회, 면접 히스토리 (feedback 도메인 백엔드 + 프론트엔드) |
+
+---
+
+## 관련 문서
+
+- [발표자료](https://docs.google.com/presentation/d/1MYbXQMjmEeGZ17ftSzQG7iYQLF4TTpXkVjnmqI-kvqE/edit?usp=sharing)
+- [서비스 플로우차트](assets/flowchart.html)
+- [DB 스키마](assets/pdback-schema%20(1).html)
 
 ---
 
@@ -104,6 +114,26 @@ graph TD
     I --> N
 ```
 
+
+---
+
+## 화면 구성
+
+| 랜딩 페이지 | 면접 설정 |
+|:-----------:|:---------:|
+| ![랜딩](assets/landingpage.png) | ![면접설정](assets/interview_setting.png) |
+
+| 면접 진행 | 마이페이지 |
+|:---------:|:---------:|
+| ![면접](assets/interview.png) | ![마이페이지](assets/mypage.png) |
+
+| 피드백 (1) | 피드백 (2) | 피드백 (3) |
+|:----------:|:----------:|:----------:|
+| ![피드백1](assets/feedback1.png) | ![피드백2](assets/feedback2.png) | ![피드백3](assets/feedback3.png) |
+
+| 면접 히스토리 |
+|:-------------:|
+| ![히스토리](assets/history.png) |
 
 ---
 

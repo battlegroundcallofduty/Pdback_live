@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P:dback Flow Chart</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+  .header { background: #1a1a2e; color: #fff; padding: 24px 40px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header h1 span { color: #6c9fff; }
+  .header p { font-size: 13px; color: #999; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 8px; padding: 16px 40px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+  .tabs button { padding: 8px 20px; border: 2px solid #e0e0e0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .tabs button:hover { border-color: #6c9fff; }
+  .tabs button.active { background: #4A6CF7; color: #fff; border-color: #4A6CF7; }
+
+  .canvas { padding: 40px; display: flex; justify-content: center; }
+  .chart { display: none; }
+  .chart.active { display: block; }
+
+  /* ===== Flow Chart Nodes ===== */
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  .arrow-down { width: 2px; height: 32px; background: #bbb; position: relative; }
+  .arrow-down::after { content: ''; position: absolute; bottom: -6px; left: -5px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #bbb; }
+
+  .arrow-label { font-size: 11px; color: #888; background: #f0f2f5; padding: 2px 8px; border-radius: 4px; margin: -4px 0; z-index: 1; }
+
+  /* Start/End */
+  .node-terminal { background: #1a1a2e; color: #fff; padding: 14px 48px; border-radius: 40px; font-size: 15px; font-weight: 600; letter-spacing: 1px; }
+
+  /* Process */
+  .node-process { background: #fff; border: 2px solid #4A6CF7; border-radius: 12px; padding: 16px 32px; min-width: 280px; text-align: center; box-shadow: 0 2px 8px rgba(74,108,247,0.1); }
+  .node-process .node-title { font-size: 15px; font-weight: 700; color: #4A6CF7; margin-bottom: 4px; }
+  .node-process .node-desc { font-size: 12px; color: #777; line-height: 1.5; }
+  .node-process .node-badge { display: inline-block; font-size: 10px; background: #e8f0fe; color: #4A6CF7; padding: 2px 8px; border-radius: 8px; margin-top: 6px; }
+
+  /* Decision */
+  .node-decision-wrap { display: flex; align-items: center; justify-content: center; }
+  .node-decision { background: #fff; border: 2px solid #ff6348; border-radius: 12px; padding: 16px 32px; min-width: 280px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(255,99,72,0.15); }
+  .node-decision-text { text-align: center; font-size: 14px; font-weight: 600; color: #ff6348; }
+
+  /* Sub-process / detail */
+  .node-sub { background: #f0f7ff; border: 2px dashed #4A6CF7; border-radius: 12px; padding: 16px 24px; min-width: 320px; }
+  .node-sub .sub-title { font-size: 13px; font-weight: 700; color: #4A6CF7; margin-bottom: 8px; }
+  .node-sub .sub-items { list-style: none; }
+  .node-sub .sub-items li { font-size: 12px; color: #555; padding: 3px 0; padding-left: 16px; position: relative; }
+  .node-sub .sub-items li::before { content: '→'; position: absolute; left: 0; color: #4A6CF7; }
+
+  /* Parallel / branch */
+  .branch { display: flex; gap: 24px; align-items: flex-start; }
+  .branch-item { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  /* Loop box */
+  .loop-box { border: 2px solid #2ed573; border-radius: 16px; padding: 24px 32px; background: rgba(46,213,115,0.03); position: relative; }
+  .loop-label { position: absolute; top: -12px; left: 20px; background: #2ed573; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 8px; }
+
+  /* Data store */
+  .node-data { background: #fff8e8; border: 2px solid #ffa502; border-radius: 0 12px 12px 0; border-left: 6px solid #ffa502; padding: 12px 24px; min-width: 200px; text-align: center; }
+  .node-data .node-title { font-size: 13px; font-weight: 700; color: #e67e00; margin-bottom: 2px; }
+  .node-data .node-desc { font-size: 11px; color: #999; }
+
+  /* System action */
+  .node-system { background: #f5f0ff; border: 2px solid #a55eea; border-radius: 12px; padding: 14px 28px; min-width: 260px; text-align: center; }
+  .node-system .node-title { font-size: 13px; font-weight: 700; color: #a55eea; margin-bottom: 2px; }
+  .node-system .node-desc { font-size: 11px; color: #888; }
+
+  /* Horizontal connector */
+  .h-line { width: 40px; height: 2px; background: #bbb; align-self: center; }
+
+  /* Decision branches */
+  .decision-branch { display: flex; align-items: flex-start; gap: 0; }
+  .decision-branch .left, .decision-branch .right { display: flex; flex-direction: column; align-items: center; }
+  .decision-branch .h-connector { display: flex; align-items: center; }
+  .branch-label { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .branch-label.yes { color: #2ed573; background: #e8f8f0; }
+  .branch-label.no { color: #ff4757; background: #ffe8e8; }
+
+  /* === Detailed Flow === */
+  .detail-flow { max-width: 900px; margin: 0 auto; }
+  .detail-section { background: #fff; border-radius: 16px; padding: 32px; margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .detail-section h2 { font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .detail-section h2 .badge { font-size: 11px; background: #e8f0fe; color: #4A6CF7; padding: 3px 10px; border-radius: 8px; font-weight: 500; }
+  .step-flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .connector-h { display: flex; align-items: center; gap: 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>P:dback</span> — Service Flow Chart</h1>
+  <p>서비스 전체 흐름 및 상세 프로세스</p>
+</div>
+
+<div class="tabs">
+  <button class="active" onclick="showChart('overview')">전체 흐름</button>
+  <button onclick="showChart('auth')">인증 플로우</button>
+  <button onclick="showChart('interview')">면접 진행 플로우</button>
+  <button onclick="showChart('feedback')">피드백 생성 플로우</button>
+</div>
+
+<div class="canvas">
+
+<!-- ========== 1. 전체 흐름 ========== -->
+<div class="chart active" id="chart-overview">
+  <div class="flow">
+    <div class="node-terminal">START</div>
+    <div class="arrow-down"></div>
+
+    <div class="node-process">
+      <div class="node-title">회원가입 / 로그인</div>
+      <div class="node-desc">이메일 + 비밀번호 입력</div>
+      <div class="node-badge">auth-user / 김유선</div>
+    </div>
+    <div class="arrow-down"></div>
+    <div class="arrow-label">JWT 토큰 발급</div>
+    <div class="arrow-down"></div>
+
+    <div class="node-process">
+      <div class="node-title">면접 설정</div>
+      <div class="node-desc">직무 · 기술스택 · 경력연차 선택<br>카메라/마이크 권한 허용</div>
+      <div class="node-badge">interview / 이영진</div>
+    </div>
+    <div class="arrow-down"></div>
+    <div class="arrow-label">POST /api/v1/interview/start</div>
+    <div class="arrow-down"></div>
+
+    <div class="node-system">
+      <div class="node-title">Gemini 첫 질문 생성</div>
+      <div class="node-desc">직무/스택 기반 면접 질문 프롬프트 → 시니어 개발자 페르소나</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <!-- 면접 루프 -->
+    <div class="loop-box">
+      <div class="loop-label">반복 (질문 수 제한까지)</div>
+      <div class="flow">
+        <div class="node-process" style="border-color:#2ed573;">
+          <div class="node-title" style="color:#2ed573;">AI 질문 표시</div>
+          <div class="node-desc">면접관 질문을 채팅 UI에 표시</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="branch" style="justify-content:center;">
+          <div class="branch-item">
+            <div class="node-process" style="min-width:200px;">
+              <div class="node-title">음성 답변 (STT)</div>
+              <div class="node-desc">Web Speech API<br>음성 → 텍스트 변환</div>
+            </div>
+          </div>
+          <div style="width:2px;background:#bbb;align-self:stretch;margin:0 -12px;"></div>
+          <div class="branch-item">
+            <div class="node-system" style="min-width:200px;">
+              <div class="node-title">태도 분석</div>
+              <div class="node-desc">MediaPipe FaceMesh/Pose<br>시선이탈 · 자세 감지</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-process" style="border-color:#2ed573;">
+          <div class="node-title" style="color:#2ed573;">답변 제출</div>
+          <div class="node-desc">STT 텍스트 + 태도 점수 → 백엔드 전송</div>
+        </div>
+        <div class="arrow-down"></div>
+        <div class="arrow-label">Gemini 꼬리질문 생성</div>
+      </div>
+    </div>
+    <div class="arrow-down"></div>
+    <div class="arrow-label">질문 수 도달 or 수동 종료</div>
+    <div class="arrow-down"></div>
+
+    <div class="node-process">
+      <div class="node-title">면접 종료</div>
+      <div class="node-desc">종료시간 기록 · 피드백 생성 요청</div>
+      <div class="node-badge">interview / 이영진</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <div class="node-system">
+      <div class="node-title">Gemini 종합 피드백 생성</div>
+      <div class="node-desc">전체 대화 기반 → 기술/논리/태도 점수 + 강점 + 개선점 + 모범답안</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <div class="node-data">
+      <div class="node-title">MongoDB 저장</div>
+      <div class="node-desc">feedbacks 컬렉션</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <div class="node-process">
+      <div class="node-title">피드백 결과 확인</div>
+      <div class="node-desc">점수 카드 · 차트 · 강점/개선점 · 모범답안</div>
+      <div class="node-badge">feedback / 박지영</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <div class="node-data">
+      <div class="node-title">히스토리 저장</div>
+      <div class="node-desc">유저별 면접 이력 · 점수 추이</div>
+    </div>
+    <div class="arrow-down"></div>
+
+    <div class="node-decision-wrap">
+      <div class="node-decision">
+        <div class="node-decision-text">재면접?</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:80px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div class="branch-label yes">YES</div>
+        <div class="arrow-down" style="height:20px;"></div>
+        <div class="node-process" style="min-width:160px;padding:12px 24px;">
+          <div class="node-title" style="font-size:13px;">면접 설정으로</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div class="branch-label no">NO</div>
+        <div class="arrow-down" style="height:20px;"></div>
+        <div class="node-terminal">END</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 2. 인증 플로우 ========== -->
+<div class="chart" id="chart-auth">
+  <div class="detail-flow">
+    <div class="detail-section">
+      <h2>🔐 인증 플로우 <span class="badge">auth-user / 김유선</span></h2>
+      <div class="flow">
+        <div class="node-terminal">사용자 접속</div>
+        <div class="arrow-down"></div>
+
+        <div class="node-decision-wrap">
+          <div class="node-decision">
+            <div class="node-decision-text">계정 있음?</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:60px;align-items:flex-start;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div class="branch-label no">NO (회원가입)</div>
+            <div class="arrow-down" style="height:16px;"></div>
+            <div class="node-process" style="min-width:240px;">
+              <div class="node-title">회원가입 폼</div>
+              <div class="node-desc">이름 · 이메일 · 비밀번호 입력</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="node-system" style="min-width:240px;">
+              <div class="node-title">비밀번호 해싱</div>
+              <div class="node-desc">passlib + bcrypt</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="node-data" style="min-width:240px;">
+              <div class="node-title">users 컬렉션 저장</div>
+              <div class="node-desc">MongoDB</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="arrow-label">가입 완료 → 로그인으로</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div class="branch-label yes">YES (로그인)</div>
+            <div class="arrow-down" style="height:16px;"></div>
+            <div class="node-process" style="min-width:240px;">
+              <div class="node-title">로그인 폼</div>
+              <div class="node-desc">이메일 · 비밀번호 입력</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="node-system" style="min-width:240px;">
+              <div class="node-title">비밀번호 검증</div>
+              <div class="node-desc">bcrypt.verify()</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="node-system" style="min-width:240px;">
+              <div class="node-title">JWT 토큰 발급</div>
+              <div class="node-desc">access_token + 만료시간</div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="node-process" style="min-width:240px;">
+              <div class="node-title">메인 페이지 이동</div>
+              <div class="node-desc">localStorage에 토큰 저장</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:32px;">
+          <div class="node-sub" style="max-width:500px;">
+            <div class="sub-title">JWT 인증 미들웨어 (모든 보호 API)</div>
+            <ul class="sub-items">
+              <li>Authorization 헤더에서 Bearer 토큰 추출</li>
+              <li>토큰 디코딩 및 만료 확인</li>
+              <li>user_id 추출 → request.state.user에 주입</li>
+              <li>실패 시 401 Unauthorized 반환</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 3. 면접 진행 플로우 ========== -->
+<div class="chart" id="chart-interview">
+  <div class="detail-flow">
+    <div class="detail-section">
+      <h2>🎤 면접 진행 플로우 <span class="badge">interview / 이영진 · ai-gemini / 김평일</span></h2>
+      <div class="flow">
+        <div class="node-process">
+          <div class="node-title">면접 설정 완료</div>
+          <div class="node-desc">직무: 백엔드 · 스택: Python, FastAPI · 연차: 신입</div>
+        </div>
+        <div class="arrow-down"></div>
+        <div class="arrow-label">POST /api/v1/interview/start</div>
+        <div class="arrow-down"></div>
+
+        <div class="branch" style="justify-content:center;">
+          <div class="branch-item">
+            <div class="node-data">
+              <div class="node-title">세션 생성</div>
+              <div class="node-desc">interviews 컬렉션에 문서 생성<br>session_id, user_id, 시작시간</div>
+            </div>
+          </div>
+          <div style="width:24px;"></div>
+          <div class="branch-item">
+            <div class="node-system">
+              <div class="node-title">Gemini 첫 질문 생성</div>
+              <div class="node-desc">시니어 면접관 페르소나<br>직무/스택 기반 기술 질문</div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="loop-box" style="max-width:600px;">
+          <div class="loop-label">면접 루프 (n회 반복)</div>
+          <div class="flow">
+            <div class="node-process" style="border-color:#2ed573;min-width:400px;">
+              <div class="node-title" style="color:#2ed573;">1. 질문 표시</div>
+              <div class="node-desc">AI 면접관 질문 → 채팅 UI에 렌더링</div>
+            </div>
+            <div class="arrow-down"></div>
+
+            <div class="node-process" style="min-width:400px;">
+              <div class="node-title">2. 사용자 답변 (음성)</div>
+              <div class="node-desc">Web Speech API 활성화 → 음성을 실시간 텍스트 변환</div>
+            </div>
+            <div class="arrow-down"></div>
+
+            <div style="display:flex;gap:16px;justify-content:center;">
+              <div class="node-system" style="min-width:180px;">
+                <div class="node-title">MediaPipe 분석</div>
+                <div class="node-desc">FaceMesh: 시선이탈 횟수<br>Pose: 자세 안정도<br>→ 태도 점수 산출</div>
+              </div>
+              <div class="node-system" style="min-width:180px;">
+                <div class="node-title">STT 텍스트 전송</div>
+                <div class="node-desc">POST /api/v1/interview/answer<br>답변 텍스트 + 태도 점수</div>
+              </div>
+            </div>
+            <div class="arrow-down"></div>
+
+            <div class="node-decision-wrap" style="width:200px;height:100px;">
+              <div class="node-decision" style="width:160px;height:80px;">
+                <div class="node-decision-text" style="font-size:11px;">질문 수 제한<br>도달?</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:60px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div class="branch-label no">NO</div>
+                <div class="arrow-down" style="height:16px;"></div>
+                <div class="node-system" style="min-width:180px;">
+                  <div class="node-title">Gemini 꼬리질문</div>
+                  <div class="node-desc">대화 이력 기반<br>후속 질문 생성</div>
+                </div>
+                <div class="arrow-down" style="height:12px;"></div>
+                <div class="arrow-label">↑ 루프 처음으로</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div class="branch-label yes">YES</div>
+                <div class="arrow-down" style="height:16px;"></div>
+                <div class="arrow-label">면접 종료로 →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-process">
+          <div class="node-title">면접 종료</div>
+          <div class="node-desc">POST /api/v1/interview/end<br>종료시간 기록 · 피드백 생성 요청 트리거</div>
+        </div>
+        <div class="arrow-down"></div>
+        <div class="arrow-label">→ 피드백 생성 플로우로</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 4. 피드백 생성 플로우 ========== -->
+<div class="chart" id="chart-feedback">
+  <div class="detail-flow">
+    <div class="detail-section">
+      <h2>📊 피드백 생성 플로우 <span class="badge">feedback / 박지영 · ai-gemini / 김평일</span></h2>
+      <div class="flow">
+        <div class="node-process">
+          <div class="node-title">면접 종료 트리거</div>
+          <div class="node-desc">면접 세션의 전체 대화 이력 수집</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-sub" style="max-width:500px;">
+          <div class="sub-title">입력 데이터 수집</div>
+          <ul class="sub-items">
+            <li>전체 질문-답변 대화 이력 (Gemini chat history)</li>
+            <li>MediaPipe 태도 데이터 (시선이탈 횟수, 정면주시율, 자세 안정도)</li>
+            <li>면접 메타 정보 (직무, 스택, 연차, 소요시간)</li>
+          </ul>
+        </div>
+        <div class="arrow-down"></div>
+        <div class="arrow-label">POST /api/v1/feedback/generate</div>
+        <div class="arrow-down"></div>
+
+        <div style="display:flex;gap:16px;justify-content:center;">
+          <div class="node-system" style="min-width:220px;">
+            <div class="node-title">Gemini AI 평가</div>
+            <div class="node-desc">기술 정확도 (1-10)<br>논리 구성력 (1-10)<br>강점 · 개선점 · 모범답안</div>
+          </div>
+          <div class="node-system" style="min-width:220px;">
+            <div class="node-title">태도 점수 산출</div>
+            <div class="node-desc">시선이탈 횟수 → 점수 변환<br>자세 데이터 → 점수 변환<br>태도 종합 점수 (1-10)</div>
+          </div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-sub" style="max-width:500px;">
+          <div class="sub-title">피드백 JSON 구조화</div>
+          <ul class="sub-items">
+            <li>scores: { technical, logical, attitude }</li>
+            <li>strengths: ["강점1", "강점2", ...]</li>
+            <li>improvements: ["개선점1", "개선점2", ...]</li>
+            <li>model_answers: [{ question, answer }, ...]</li>
+          </ul>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-data">
+          <div class="node-title">feedbacks 컬렉션 저장</div>
+          <div class="node-desc">interview_id, user_id, scores, feedback_text</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-process">
+          <div class="node-title">피드백 결과 페이지</div>
+          <div class="node-desc">GET /api/v1/feedback/{interview_id}<br>점수 카드 + Chart.js 시각화 + 강점/개선점 + 모범답안</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-data">
+          <div class="node-title">히스토리 누적</div>
+          <div class="node-desc">유저별 면접 이력 · 점수 추이 데이터</div>
+        </div>
+        <div class="arrow-down"></div>
+
+        <div class="node-terminal">완료</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- canvas -->
+
+<script>
+function showChart(id) {
+  document.querySelectorAll('.chart').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('chart-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
