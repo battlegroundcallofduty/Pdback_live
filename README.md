@@ -3,6 +3,8 @@
 > Vision AI와 STT를 결합하여 자세·시선·답변을 실시간 분석하고,  
 > Gemini AI가 질문별 상세 피드백을 제공하는 개발자 맞춤형 면접 연습 플랫폼
 
+![랜딩 페이지](assets/landingpage.png)
+
 ---
 
 ## 목차
@@ -11,7 +13,6 @@
 - [관련 문서](#관련-문서)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
-- [화면 구성](#화면-구성)
 - [주요 기능](#주요-기능)
 - [내 담당 기능 상세](#내-담당-기능-상세)
 - [API 엔드포인트](#api-엔드포인트)
@@ -44,8 +45,8 @@ MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성
 ## 관련 문서
 
 - [발표자료](https://docs.google.com/presentation/d/1MYbXQMjmEeGZ17ftSzQG7iYQLF4TTpXkVjnmqI-kvqE/edit?usp=sharing)
-- [서비스 플로우차트](assets/flowchart.html)
-- [DB 스키마](assets/pdback-schema%20(1).html)
+- [서비스 플로우차트](https://gabriel-1204.github.io/Pdback/assets/flowchart.html)
+- [DB 스키마](https://gabriel-1204.github.io/Pdback/assets/pdback-schema%20(1).html)
 
 ---
 
@@ -117,36 +118,38 @@ graph TD
 
 ---
 
-## 화면 구성
+## 주요 기능
 
-| 랜딩 페이지 | 면접 설정 |
-|:-----------:|:---------:|
-| ![랜딩](assets/landingpage.png) | ![면접설정](assets/interview_setting.png) |
+### 면접 설정 · 진행 · AI 분석
 
-| 면접 진행 | 마이페이지 |
+| 면접 설정 | 면접 진행 |
 |:---------:|:---------:|
-| ![면접](assets/interview.png) | ![마이페이지](assets/mypage.png) |
+| ![면접설정](assets/interview_setting.png) | ![면접](assets/interview.png) |
+
+- **AI 면접 진행**: Gemini 기반 면접관 페르소나로 실시간 질의응답
+- **자세 / 시선 분석**: MediaPipe로 자세 안정성 및 카메라 시선 처리율 실시간 측정
+- **음성 인식 (STT)**: Web Speech API로 답변 음성을 텍스트로 변환
+
+### AI 피드백 생성
 
 | 피드백 (1) | 피드백 (2) | 피드백 (3) |
 |:----------:|:----------:|:----------:|
 | ![피드백1](assets/feedback1.png) | ![피드백2](assets/feedback2.png) | ![피드백3](assets/feedback3.png) |
 
-| 면접 히스토리 |
-|:-------------:|
-| ![히스토리](assets/history.png) |
+- 질문별 점수, 기술 / 논리 / 키워드 종합 점수, 강점 및 개선점 제공
+- 자세·시선 점수와 코멘트 자동 생성
 
----
+### 면접 히스토리
 
-## 주요 기능
+![히스토리](assets/history.png)
 
-| 기능 | 설명 |
-|------|------|
-| AI 면접 진행 | Gemini 기반 면접관 페르소나로 실시간 질의응답 |
-| 자세 / 시선 분석 | MediaPipe로 자세 안정성 및 카메라 시선 처리율 측정 |
-| 음성 인식 (STT) | Web Speech API로 답변 음성을 텍스트로 변환 |
-| AI 피드백 생성 | 질문별 점수, 기술/논리/키워드 종합 점수, 강점/개선점 제공 |
-| 면접 히스토리 | 과거 면접 목록 조회 및 점수 추이 차트 시각화 |
-| 마이페이지 통계 | 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 |
+- 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+
+### 마이페이지 통계
+
+![마이페이지](assets/mypage.png)
+
+- 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
 
 ---
 
@@ -161,7 +164,17 @@ graph TD
 
 - **중복 생성 차단**: 동일 면접에 대해 피드백이 이미 존재하면 `409 Conflict` 반환
 - **소유자 검증**: 타인의 면접 데이터에 대한 피드백 생성/조회 방지 (`403 Forbidden`)
-- **AI 피드백 파싱**: Gemini 응답이 마크다운으로 래핑될 경우를 대비한 정규식 파싱 처리
+- **AI 피드백 파싱**: Gemini 응답이 마크다운 코드블록으로 래핑되는 경우를 대비해 정규식으로 벗겨낸 뒤 JSON 파싱 — 외부 AI API 응답을 신뢰하지 않는 방어적 처리
+
+  ```python
+  raw = response.text.strip()
+  try:
+      data = json.loads(raw)           # 깔끔한 JSON이면 바로 파싱
+  except json.JSONDecodeError:
+      raw = re.sub(r"^```(?:json)?\s*", "", raw)   # 앞 ```json 제거
+      raw = re.sub(r"\s*```$", "", raw).strip()    # 뒤 ``` 제거
+      data = json.loads(raw)           # 재시도
+  ```
 - **자세/태도 점수 산출**: 시선 처리율(eye_contact)과 자세 안정성(posture_safety_rate)을 가중 평균하여 태도 점수 계산, 조합별 9가지 코멘트 자동 생성
 - **응답 시간 표시**: 질문별 내 답변 옆에 소요 시간(duration_seconds)을 함께 표시
 
