@@ -122,22 +122,21 @@ graph TD
 
 ### 면접 설정 · 진행 · AI 분석
 
-| 면접 설정 | 면접 진행 |
-|:---------:|:---------:|
-| ![면접설정](assets/interview_setting.png) | ![면접](assets/interview.png) |
-
 - **AI 면접 진행**: Gemini 기반 면접관 페르소나로 실시간 질의응답
 - **자세 / 시선 분석**: MediaPipe로 자세 안정성 및 카메라 시선 처리율 실시간 측정
 - **음성 인식 (STT)**: Web Speech API로 답변 음성을 텍스트로 변환
 
-### AI 피드백 생성
+![면접설정](assets/interview_setting.png)
+![면접](assets/interview.png)
 
-| 피드백 (1) | 피드백 (2) | 피드백 (3) |
-|:----------:|:----------:|:----------:|
-| ![피드백1](assets/feedback1.png) | ![피드백2](assets/feedback2.png) | ![피드백3](assets/feedback3.png) |
+### AI 피드백 생성
 
 - 질문별 점수, 기술 / 논리 / 키워드 종합 점수, 강점 및 개선점 제공
 - 자세·시선 점수와 코멘트 자동 생성
+
+![피드백1](assets/feedback1.png)
+![피드백2](assets/feedback2.png)
+![피드백3](assets/feedback3.png)
 
 ### 면접 히스토리
 
