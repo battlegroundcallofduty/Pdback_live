@@ -167,7 +167,7 @@ graph TD
 **담당 범위**: `feedback` 도메인 전체 (백엔드 + 프론트엔드)  
 `app/domain/feedback/`, `frontend/pages/feedback.html`, `frontend/pages/history.html`, `frontend/js/feedback.js`, `frontend/js/history.js`
 
-### - 피드백 생성 및 조회 (feedback.html)
+### 1. 피드백 생성 및 조회 (feedback.html)
 
 면접 종료 후 면접 세션 데이터를 바탕으로 AI 피드백을 생성하고 결과를 시각화합니다.
 
@@ -187,7 +187,7 @@ graph TD
 - **자세/태도 점수 산출**: 시선 처리율(eye_contact)과 자세 안정성(posture_safety_rate)을 가중 평균하여 태도 점수 계산, 조합별 9가지 코멘트 자동 생성
 - **응답 시간 표시**: 질문별 내 답변 옆에 소요 시간(duration_seconds)을 함께 표시
 
-### - 면접 히스토리 (history.html)
+### 2. 면접 히스토리 (history.html)
 
 사용자의 과거 면접 목록을 최신순으로 조회하고, 점수 추이를 바 차트로 시각화합니다.
 
@@ -195,7 +195,7 @@ graph TD
 - **페이지네이션**: `page` / `size` 파라미터 기반 서버 사이드 페이지네이션 구현
 - **방어 로직**: 면접 데이터가 없는 피드백(DB 정리 후 고아 데이터)은 응답에서 자동 스킵
 
-### - 마이페이지 통계 연동
+### + 마이페이지 통계 연동
 
 - `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
 
