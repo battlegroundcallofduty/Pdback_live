@@ -20,6 +20,8 @@
 
 ## 프로젝트 소개
 
+**배포 주소**: [https://pdback.live](https://pdback.live)
+
 P:dback은 실제 화상 면접 환경을 시뮬레이션하여 기술 면접을 연습할 수 있는 풀스택 웹 애플리케이션입니다.  
 MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성 답변을 텍스트로 변환한 뒤, Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
@@ -102,52 +104,6 @@ graph TD
     I --> N
 ```
 
-```
-Pdback/
-├── app/                          # FastAPI 백엔드
-│   ├── main.py                   # 앱 진입점 & 라우터 통합
-│   ├── config.py                 # 환경변수 / KST 설정
-│   ├── database.py               # MongoDB Motor 연결
-│   ├── core/
-│   │   └── security.py           # JWT 인증
-│   ├── api/v1/
-│   │   └── router.py             # API 버전 라우터
-│   ├── domain/
-│   │   ├── user/                 # 회원가입 / 로그인 / 마이페이지
-│   │   │   └── models.py
-│   │   ├── interview/            # 면접 세션 생성 & 진행
-│   │   │   ├── models.py
-│   │   │   ├── schema.py
-│   │   │   ├── router.py
-│   │   │   ├── service.py
-│   │   │   └── prompt.py
-│   │   └── feedback/             # ★ 피드백 생성 & 히스토리 (내 담당)
-│   │       ├── models.py         # feedbacks 컬렉션 스키마
-│   │       ├── schema.py         # 요청/응답 DTO
-│   │       ├── router.py         # API 엔드포인트
-│   │       └── service.py        # 비즈니스 로직
-│   └── services/
-│       └── gemini.py             # Gemini API 클라이언트
-├── frontend/                     # Vanilla JS 프론트엔드
-│   ├── index.html
-│   ├── css/
-│   │   └── common.css
-│   ├── js/
-│   │   ├── feedback.js           # ★ 피드백 페이지 (내 담당)
-│   │   ├── history.js            # ★ 히스토리 페이지 (내 담당)
-│   │   ├── mediapipe_analysis.js # Vision AI 자세/시선 분석
-│   │   ├── webcam.js             # 웹캠 스트림 관리
-│   │   ├── sound_detection.js    # 마이크 음성 감지
-│   │   └── ...
-│   └── pages/
-│       ├── feedback.html         # ★ 피드백 결과 페이지 (내 담당)
-│       ├── history.html          # ★ 면접 히스토리 페이지 (내 담당)
-│       └── ...
-├── Dockerfile
-├── docker-compose.yml
-├── pyproject.toml                # Ruff 린터 설정
-└── requirements.txt
-```
 
 ---
 
