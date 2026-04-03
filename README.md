@@ -262,13 +262,66 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 **팀 간 인터페이스 동기화**
 
-피드백 도메인은 다른 팀원이 만든 interview 데이터를 읽어서 가공하는 구조입니다.  
-토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀 간 데이터 계약의 중요성을 체감했습니다.
+피드백 도메인은 다른 팀원이 만든 데이터들을 조회하거나 가공하는 구조입니다.  
+토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업 `GET` | `/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
+
+> 서버 실행 후 `http://localhost:8000/docs` 에서 Swagger UI로 전체 API 확인 가능
+
+---
+
+## 로컬 실행 방법
+
+### ▪️ 환경 설정
+
+```bash
+cp .env.example .env
+# .env 파일에서 GEMINI_API_KEY, MONGODB_URL 등 설정
+```
+
+### ▪️ pip으로 실행
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### ▪️ Docker로 실행
+
+```bash
+docker compose up --build
+```
+
+---
+
+## 회고 및 개선사항
+
+### 💡 기억에 남는 구현
+
+**N+1 쿼리 문제 해결**
+
+히스토리 목록을 가져올 때 피드백마다 면접 데이터를 개별 조회하면 N번의 DB 왕복이 발생합니다.  
+`$in` 연산자로 면접 ID 목록을 한 번에 조회한 뒤 딕셔너리로 매핑하여 단일 쿼리로 처리했습니다.
+
+```python
+# Before: 피드백 N개 → 면접 N번 조회
+# After: 피드백 N개 → 면접 1번 조회($in)
+interview_list = await db["interviews"].find(
+    {"_id": {"$in": interview_ids}}
+).to_list(length=None)
+interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
+```
+
+**팀 간 인터페이스 동기화**
+
+피드백 도메인은 다른 팀원이 만든 데이터들을 조회하거나 가공하는 구조입니다.  
+토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.
 
 **에러 처리 체계화**
 
-초기에는 에러 처리가 산발적으로 되어 있었습니다.  
-`HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
+초기에는 에러 처리가 일관성이 없었습니다.  
+팀장님의 코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
 
 ---
 
