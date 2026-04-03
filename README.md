@@ -25,7 +25,7 @@
 
 **🖥️ 배포 주소**: [https://pdback.live](https://pdback.live)
 
-P:dback은 실제 화상 면접 환경을 시뮬레이션하여 기술 면접을 연습할 수 있는 풀스택 웹 애플리케이션입니다.  
+P:dback은 실제 화상 면접 환경을 시뮬레이션하여 기술 면접을 연습할 수 있는 웹 애플리케이션입니다.  
 MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성 답변을 텍스트로 변환한 뒤, <br>
 Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
