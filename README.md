@@ -1,24 +1,224 @@
-# P:dback Backend
+# P:dback — AI 기반 실전 화상 면접 솔루션
 
-Vision AI와 STT가 결합된 개발자 맞춤형 실전 화상 면접 솔루션 - FastAPI 백엔드
+> Vision AI와 STT를 결합하여 자세·시선·답변을 실시간 분석하고,  
+> Gemini AI가 질문별 상세 피드백을 제공하는 개발자 맞춤형 면접 연습 플랫폼
+
+---
+
+## 목차
+
+- [프로젝트 소개](#프로젝트-소개)
+- [기술 스택](#기술-스택)
+- [프로젝트 구조](#프로젝트-구조)
+- [주요 기능](#주요-기능)
+- [내 담당 기능 상세](#내-담당-기능-상세)
+- [API 엔드포인트](#api-엔드포인트)
+- [로컬 실행 방법](#로컬-실행-방법)
+- [회고 및 개선사항](#회고-및-개선사항)
+
+---
+
+## 프로젝트 소개
+
+P:dback은 실제 화상 면접 환경을 시뮬레이션하여 기술 면접을 연습할 수 있는 풀스택 웹 애플리케이션입니다.  
+MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성 답변을 텍스트로 변환한 뒤, Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
+
+- **개발 기간**: 2025년 상반기
+- **팀 구성**: 5인 풀스택 (백엔드 FastAPI + 프론트엔드 Vanilla JS)
+- **배포 환경**: AWS EC2 + Docker + GitHub Actions CI/CD
+
+| 이름 | 역할 |
+|------|------|
+| 김상혁 (팀장) | 프로젝트 초기 세팅, 인프라 구성, Docker / AWS EC2 배포, GitHub Actions CI/CD |
+| 김유선 | 회원가입 / 로그인 / 마이페이지 (user 도메인 백엔드 + 프론트엔드) |
+| 김평일 | Gemini 프롬프트 설계, 면접 설정 페이지, Gemini API 클라이언트 |
+| 이영진 | 면접 세션 진행 (interview 도메인 백엔드 + 프론트엔드, 면접관 페르소나) |
+| 박지영 | 피드백 생성 / 조회, 면접 히스토리 (feedback 도메인 백엔드 + 프론트엔드) |
+
+---
 
 ## 기술 스택
 
-- **Framework**: FastAPI (Python 3.11)
-- **Database**: MongoDB + Motor (async driver)
-- **AI**: Google Gemini API
-- **Infra**: Docker, AWS EC2, GitHub Actions
+### Backend
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Motor_Async-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
 
-## 로컬 실행
+### AI / ML
+![Google Gemini](https://img.shields.io/badge/Google_Gemini-API-4285F4?style=flat-square&logo=google&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-Vision_AI-0097A7?style=flat-square&logo=google&logoColor=white)
 
-### 1. 환경 설정
+### Frontend
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+
+### Infra / DevOps
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=flat-square&logo=amazonaws&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
+![Ruff](https://img.shields.io/badge/Ruff-Linter-D7FF64?style=flat-square&logo=ruff&logoColor=black)
+
+---
+
+## 프로젝트 구조
+
+```mermaid
+graph TD
+    subgraph Frontend["Frontend (Vanilla JS)"]
+        A[index.html<br/>랜딩] --> B[login.html<br/>로그인]
+        B --> C[interview-setup.html<br/>면접 설정]
+        C --> D[interview.html<br/>면접 진행]
+        D --> E[feedback.html<br/>피드백 결과]
+        E --> F[history.html<br/>면접 히스토리]
+        B --> G[mypage.html<br/>마이페이지]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        H[main.py<br/>앱 진입점]
+        H --> I[user<br/>인증/유저]
+        H --> J[interview<br/>면접 세션]
+        H --> K[feedback<br/>피드백/히스토리]
+    end
+
+    subgraph AI["AI Services"]
+        L[Google Gemini API<br/>답변 분석 & 피드백]
+        M[MediaPipe<br/>자세 & 시선 분석]
+    end
+
+    subgraph DB["Database"]
+        N[(MongoDB<br/>users / interviews / feedbacks)]
+    end
+
+    E -- "POST /feedback/generate" --> K
+    F -- "GET /feedback/history" --> K
+    G -- "GET /feedback/stats" --> K
+    D -- "WebRTC + STT" --> J
+    J --> L
+    D --> M
+    K --> N
+    J --> N
+    I --> N
+```
+
+```
+Pdback/
+├── app/                          # FastAPI 백엔드
+│   ├── main.py                   # 앱 진입점 & 라우터 통합
+│   ├── config.py                 # 환경변수 / KST 설정
+│   ├── database.py               # MongoDB Motor 연결
+│   ├── core/
+│   │   └── security.py           # JWT 인증
+│   ├── api/v1/
+│   │   └── router.py             # API 버전 라우터
+│   ├── domain/
+│   │   ├── user/                 # 회원가입 / 로그인 / 마이페이지
+│   │   │   └── models.py
+│   │   ├── interview/            # 면접 세션 생성 & 진행
+│   │   │   ├── models.py
+│   │   │   ├── schema.py
+│   │   │   ├── router.py
+│   │   │   ├── service.py
+│   │   │   └── prompt.py
+│   │   └── feedback/             # ★ 피드백 생성 & 히스토리 (내 담당)
+│   │       ├── models.py         # feedbacks 컬렉션 스키마
+│   │       ├── schema.py         # 요청/응답 DTO
+│   │       ├── router.py         # API 엔드포인트
+│   │       └── service.py        # 비즈니스 로직
+│   └── services/
+│       └── gemini.py             # Gemini API 클라이언트
+├── frontend/                     # Vanilla JS 프론트엔드
+│   ├── index.html
+│   ├── css/
+│   │   └── common.css
+│   ├── js/
+│   │   ├── feedback.js           # ★ 피드백 페이지 (내 담당)
+│   │   ├── history.js            # ★ 히스토리 페이지 (내 담당)
+│   │   ├── mediapipe_analysis.js # Vision AI 자세/시선 분석
+│   │   ├── webcam.js             # 웹캠 스트림 관리
+│   │   ├── sound_detection.js    # 마이크 음성 감지
+│   │   └── ...
+│   └── pages/
+│       ├── feedback.html         # ★ 피드백 결과 페이지 (내 담당)
+│       ├── history.html          # ★ 면접 히스토리 페이지 (내 담당)
+│       └── ...
+├── Dockerfile
+├── docker-compose.yml
+├── pyproject.toml                # Ruff 린터 설정
+└── requirements.txt
+```
+
+---
+
+## 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| AI 면접 진행 | Gemini 기반 면접관 페르소나로 실시간 질의응답 |
+| 자세 / 시선 분석 | MediaPipe로 자세 안정성 및 카메라 시선 처리율 측정 |
+| 음성 인식 (STT) | Web Speech API로 답변 음성을 텍스트로 변환 |
+| AI 피드백 생성 | 질문별 점수, 기술/논리/키워드 종합 점수, 강점/개선점 제공 |
+| 면접 히스토리 | 과거 면접 목록 조회 및 점수 추이 차트 시각화 |
+| 마이페이지 통계 | 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 |
+
+---
+
+## 내 담당 기능 상세
+
+**담당 범위**: `feedback` 도메인 전체 (백엔드 + 프론트엔드)  
+`app/domain/feedback/`, `frontend/pages/feedback.html`, `frontend/pages/history.html`, `frontend/js/feedback.js`, `frontend/js/history.js`
+
+### 피드백 생성 및 조회 (feedback.html)
+
+면접 종료 후 면접 세션 데이터를 바탕으로 AI 피드백을 생성하고 결과를 시각화합니다.
+
+- **중복 생성 차단**: 동일 면접에 대해 피드백이 이미 존재하면 `409 Conflict` 반환
+- **소유자 검증**: 타인의 면접 데이터에 대한 피드백 생성/조회 방지 (`403 Forbidden`)
+- **AI 피드백 파싱**: Gemini 응답이 마크다운으로 래핑될 경우를 대비한 정규식 파싱 처리
+- **자세/태도 점수 산출**: 시선 처리율(eye_contact)과 자세 안정성(posture_safety_rate)을 가중 평균하여 태도 점수 계산, 조합별 9가지 코멘트 자동 생성
+- **응답 시간 표시**: 질문별 내 답변 옆에 소요 시간(duration_seconds)을 함께 표시
+
+### 면접 히스토리 (history.html)
+
+사용자의 과거 면접 목록을 최신순으로 조회하고, 점수 추이를 바 차트로 시각화합니다.
+
+- **N+1 쿼리 제거**: 피드백 목록 조회 후 면접 데이터를 건별로 조회하는 방식에서 MongoDB `$in` 연산자로 한 번에 일괄 조회하도록 개선
+- **페이지네이션**: `page` / `size` 파라미터 기반 서버 사이드 페이지네이션 구현
+- **방어 로직**: 면접 데이터가 없는 피드백(DB 정리 후 고아 데이터)은 응답에서 자동 스킵
+
+### 마이페이지 통계 연동
+
+- `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+- KST 기준 이번 주 월요일 00:00 이후 데이터만 필터링하여 주간 통계 산출
+
+---
+
+## API 엔드포인트
+
+### Feedback
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| `POST` | `/feedback/generate` | 면접 종료 후 AI 피드백 생성 | JWT 필요 |
+| `GET` | `/feedback/history` | 내 면접 히스토리 목록 조회 (페이지네이션) | JWT 필요 |
+| `GET` | `/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
+| `GET` | `/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
+
+> 서버 실행 후 `http://localhost:8000/docs` 에서 Swagger UI로 전체 API 확인 가능
+
+---
+
+## 로컬 실행 방법
+
+### 환경 설정
 
 ```bash
 cp .env.example .env
-# .env 파일에서 GEMINI_API_KEY 등 설정
+# .env 파일에서 GEMINI_API_KEY, MONGODB_URL 등 설정
 ```
 
-### 2-A. pip으로 실행
+### pip으로 실행
 
 ```bash
 python -m venv venv
@@ -27,230 +227,65 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### 2-B. Docker로 실행
+### Docker로 실행
 
 ```bash
 docker compose up --build
 ```
 
-## API 문서
+---
 
-서버 실행 후 아래 주소에서 Swagger UI 확인:
+## 회고 및 개선사항
 
-- http://localhost:8000/docs
+### 기억에 남는 구현
 
-## 린터 (Ruff)
+**N+1 쿼리 문제 해결**
 
-코드 품질 유지를 위해 [Ruff](https://docs.astral.sh/ruff/)를 사용합니다. 설정은 `pyproject.toml`에 정의되어 있습니다.
+히스토리 목록을 가져올 때 피드백마다 면접 데이터를 개별 조회하면 N번의 DB 왕복이 발생합니다.  
+`$in` 연산자로 면접 ID 목록을 한 번에 조회한 뒤 딕셔너리로 매핑하여 단일 쿼리로 처리했습니다.
 
-```bash
-# 설치
-pip install ruff
-
-# 린트 검사
-ruff check app/
-
-# 자동 수정
-ruff check app/ --fix
-
-# 코드 포맷팅
-ruff format app/
+```python
+# Before: 피드백 N개 → 면접 N번 조회
+# After: 피드백 N개 → 면접 1번 조회($in)
+interview_list = await db["interviews"].find(
+    {"_id": {"$in": interview_ids}}
+).to_list(length=None)
+interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 ```
 
-## 프로젝트 구조
+**팀 간 인터페이스 동기화**
 
-```
-app/                             # 백엔드 (FastAPI)
-├── main.py                      # FastAPI 앱 진입점
-├── config.py                    # 환경변수 설정
-├── database.py                  # MongoDB 연결 관리
-├── api/v1/
-│   └── router.py                # API 라우터 통합
-├── domain/
-│   ├── user/                    # 김유선
-│   │   └── models.py                # 유저 문서 스키마
-│   ├── interview/               # 이영진
-│   │   ├── models.py                # 면접 문서 스키마
-│   │   ├── schema.py                # 요청/응답 DTO
-│   │   ├── router.py                # 면접 API 엔드포인트
-│   │   ├── service.py               # 비즈니스 로직
-│   │   └── prompt.py                # Gemini 프롬프트 템플릿 (김평일)
-│   └── feedback/                # 박지영
-│       ├── models.py                # 피드백 문서 스키마
-│       ├── schema.py                # 요청/응답 DTO
-│       ├── router.py                # 피드백 API 엔드포인트
-│       └── service.py               # 비즈니스 로직
-└── services/
-    └── gemini.py                    # Gemini API 클라이언트 (김평일)
-frontend/                        # 프론트엔드 (HTML/CSS/JS)
-├── index.html                   # 랜딩 페이지
-├── css/
-│   └── common.css               # 공통 스타일
-└── pages/
-    ├── login.html               # 로그인 (김유선)
-    ├── register.html            # 회원가입 (김유선)
-    ├── mypage.html              # 마이페이지 (김유선)
-    ├── interview-setup.html     # 면접 설정 (김평일)
-    ├── interview.html           # 면접 진행 (이영진)
-    ├── feedback.html            # 피드백 결과 (박지영)
-    └── history.html             # 면접 히스토리 (박지영)
-```
+피드백 도메인은 다른 팀원이 만든 interview 데이터를 읽어서 가공하는 구조입니다.  
+토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀 간 데이터 계약의 중요성을 체감했습니다.
+
+**에러 처리 체계화**
+
+초기에는 에러 처리가 산발적으로 되어 있었습니다.  
+`HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
 
 ---
 
-## Git 작업 가이드
+### 추후 개선하고 싶은 사항
 
-### 0. Git 명령어 기본 용어
+**히스토리 페이지 시간 표시**  
+같은 날 면접을 여러 번 진행하면 목록에서 구분이 어렵습니다. 날짜만 표시하는 현재 방식에서 시:분까지 추가하면 UX가 개선될 것입니다.
 
-| 용어 | 의미 | 예시 |
-|------|------|------|
-| `origin` | GitHub 원격 저장소의 별명 | `origin` = `https://github.com/gabriel-1204/Pdback.git` |
-| `feature/infra` | 내 컴퓨터(로컬)의 브랜치 | `git checkout feature/infra` → 로컬 브랜치 이동 |
-| `origin/main` | GitHub(원격)의 main 브랜치 | `git merge origin/main` → GitHub의 main 코드를 가져와 합치기 |
+**히스토리 바 차트 정렬 기준 선택**  
+현재 최신순 5개를 고정 표시하고 있습니다. 면접 준비 목적의 사용자 입장에서는 최신순보다 최고 점수순이나 특정 직군 필터가 더 유용할 수 있어, 사용자가 정렬 기준을 선택할 수 있도록 개선하고 싶습니다.
 
-**origin을 붙이는 기준:**
-- **내 컴퓨터에서 이동**할 때 → origin 안 붙임 (`git checkout feature/infra`)
-- **GitHub의 코드를 참조**할 때 → origin 붙임 (`git merge origin/main`, `git push origin 내브랜치`)
+**피드백 페이지 예상 답변 시간 표시**  
+현재 내 답변 소요 시간만 보여주고 있습니다. interview 모델에 이미 예상 답변 시간 필드가 존재하므로, 이를 활용해 모범 답안 옆에 "예상 시간 OO초"를 함께 표시하면 사용자가 답변 속도를 더 직관적으로 파악할 수 있습니다.
 
-자주 쓰는 명령어 정리:
+---
 
-| 명령어 | 하는 일 |
-|--------|---------|
-| `git fetch origin` | GitHub에서 최신 정보를 가져옴 (내 코드는 안 바뀜) |
-| `git merge origin/main` | GitHub의 main 코드를 내 브랜치에 합침 |
-| `git checkout 브랜치명` | 다른 브랜치로 이동 |
-| `git status` | 변경된 파일 목록 확인 |
-| `git add 파일명` | 커밋할 파일을 지정 |
-| `git commit -m "메시지"` | 변경사항을 저장 (커밋) |
-| `git push origin 브랜치명` | 내 커밋을 GitHub에 업로드 |
+### 발표 후 수렴한 피드백 (향후 기능 아이디어)
 
-### 1. PR 올리기 전 main 최신화 필수
+- 카메라 영점 보정 기능 (자세·시선 측정 전 기준점 설정)
+- 마이크 볼륨 세부 컨트롤 및 감도 조정
+- 직무 / 기술 스택 퍼스널 커스텀 설정
+- JD(직무기술서) 파일 또는 텍스트를 입력하면 관련 질문을 자동 구성하는 기능
+- GitHub Actions 기반 PR 자동화
 
-PR을 올리기 전에 반드시 최신 main을 내 브랜치에 반영해야 합니다.
-하루 중간에 다른 팀원이 PR을 머지했을 수 있으므로, **작업 시작 전과 PR 전에** 최신화해주세요.
+---
 
-```bash
-git fetch origin
-git merge origin/main
-# 충돌이 있으면 해결 후 커밋
-```
-
-> 추가로 매일 일과 종료 후 팀장이 모든 feature 브랜치를 일괄 최신화합니다.
-
-### 2. `git add .` 사용 금지 — 본인 파일만 지정해서 add
-
-`git add .`이나 `git add -A`를 사용하면 **본인이 수정하지 않은 파일까지 커밋에 포함**됩니다.
-이렇게 되면 다른 팀원의 작업을 자기 브랜치 버전으로 덮어쓰는 사고가 발생합니다.
-
-#### 올바른 커밋 순서
-
-```bash
-# 1단계: 변경된 파일 목록 확인
-git status
-
-# 2단계: 본인이 작업한 파일만 골라서 추가
-git add app/domain/feedback/service.py
-git add app/domain/feedback/models.py
-
-# 3단계: 스테이징된 파일이 내 것만인지 다시 확인
-git diff --staged --stat
-
-# 4단계: 커밋
-git commit -m "[feedback] 피드백 서비스 함수 구현"
-```
-
-#### 여러 파일을 한번에 추가하고 싶을 때
-
-```bash
-# 특정 폴더 안의 파일만 추가 (본인 담당 폴더)
-git add app/domain/feedback/
-
-# 또는 파일을 나열해서 추가
-git add app/domain/feedback/service.py app/domain/feedback/models.py
-```
-
-#### 실수로 다른 파일까지 add 했을 때
-
-```bash
-# 특정 파일을 스테이징에서 제거 (파일 내용은 유지됨)
-git restore --staged app/config.py
-```
-
-#### 이미 커밋까지 해버렸을 때 (아직 push 안 한 경우)
-
-```bash
-# 직전 커밋을 취소 (변경사항은 그대로 유지됨)
-git reset HEAD~1
-
-# 내 파일만 다시 add
-git add app/domain/feedback/service.py
-git add app/domain/feedback/models.py
-
-# 다시 커밋
-git commit -m "[feedback] 피드백 서비스 함수 구현"
-```
-
-### 3. 공통 파일 수정 시 팀 공유
-
-아래 파일들은 여러 파트에서 사용하므로, 수정 전에 반드시 팀에 알려주세요.
-사전 공유 없이 수정하면 머지 시 충돌이나 덮어쓰기가 발생할 수 있습니다.
-
-| 공통 파일 | 역할 |
-|-----------|------|
-| `app/config.py` | 환경변수 설정 |
-| `app/database.py` | MongoDB 연결 관리 |
-| `app/main.py` | FastAPI 앱 진입점 |
-| `requirements.txt` | 패키지 의존성 |
-
-공통 파일 수정이 필요하면:
-1. 팀 채팅에 수정 내용 공유
-2. **별도 PR로 먼저 머지**
-3. 나머지 팀원이 `git fetch origin && git merge origin/main`으로 반영
-4. 추가로 팀장이 일과 종료 시 각 브랜치를 일괄 최신화합니다
-
-### 4. 전체 작업 흐름 요약
-
-```
-아침 로컬 브랜치 최신화
-git fetch origin
-git checkout feature/본인브랜치명
-git merge origin/main
-git push origin feature/본인브랜치명
-
-작업 시작
-  └─ git fetch origin && git merge origin/main   (최신화)
-  └─ 코드 작업
-  └─ git status                                   (변경 파일 확인)
-  └─ git add 내파일만                              (본인 파일만 추가)
-  └─ git diff --staged --stat                     (스테이징 확인)
-  └─ git commit -m "[파트] 작업내용"                (커밋)
-  └─ git fetch origin && git merge origin/main    (PR 전 다시 최신화)
-  └─ git push origin 내브랜치                      (푸시)
-  └─ GitHub에서 PR 생성
-```
-
-> 추가로 매일 일과 종료 후 팀장이 모든 feature 브랜치를 일괄 최신화합니다.
-
-### 5. 다른 팀원의 PR이 머지된 후 내 브랜치 동기화
-
-작업 도중 다른 팀원의 PR이 main에 머지되면, 아래 순서로 내 브랜치를 최신화합니다.
-
-```bash
-# 1단계: 작업 중인 내용 저장 & 커밋 (자기 브랜치에서)
-git add 수정한파일명
-git commit -m "[파트] 작업내용"
-
-# 2단계: main 최신화
-git checkout main
-git pull origin main
-
-# 3단계: 자기 브랜치로 돌아와서 main 머지
-git checkout feature/자기브랜치
-git merge main
-
-# 4단계: 충돌 있으면 해결 후 커밋
-
-# 5단계: 작업 계속 진행
-```
-
-> 커밋하지 않고 merge하면 작업 중인 변경사항이 꼬일 수 있으므로, **반드시 커밋 후 동기화**해주세요.
+*백엔드 상세 Git 작업 가이드는 [TEAM_README.md](./TEAM_README.md)를 참고하세요.*
