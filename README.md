@@ -23,30 +23,31 @@
 
 ## 프로젝트 소개
 
-**배포 주소**: [https://pdback.live](https://pdback.live)
+**🖥️ 배포 주소**: [https://pdback.live](https://pdback.live)
 
 P:dback은 실제 화상 면접 환경을 시뮬레이션하여 기술 면접을 연습할 수 있는 풀스택 웹 애플리케이션입니다.  
-MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성 답변을 텍스트로 변환한 뒤, Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
+MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성 답변을 텍스트로 변환한 뒤, <br>
+Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
-- **개발 기간**: 2025년 상반기
-- **팀 구성**: 5인 풀스택 (백엔드 FastAPI + 프론트엔드 Vanilla JS)
+- **개발 기간**: 2026.03.12 - 2026.04.02
+- **팀 구성**: 5인 (백엔드 Python, FastAPI + 프론트엔드 html, Vanilla JS)
 - **배포 환경**: AWS EC2 + Docker + GitHub Actions CI/CD
 
 | 이름 | 역할 |
 |------|------|
-| 김상혁 (팀장) | 프로젝트 초기 세팅, 인프라 구성, Docker / AWS EC2 배포, GitHub Actions CI/CD |
-| 김유선 | 회원가입 / 로그인 / 마이페이지 (user 도메인 백엔드 + 프론트엔드) |
-| 김평일 | Gemini 프롬프트 설계, 면접 설정 페이지, Gemini API 클라이언트 |
-| 이영진 | 면접 세션 진행 (interview 도메인 백엔드 + 프론트엔드, 면접관 페르소나) |
-| 박지영 | 피드백 생성 / 조회, 면접 히스토리 (feedback 도메인 백엔드 + 프론트엔드) |
+| [김상혁](https://github.com/gabriel-1204) | 초기 세팅, 인프라, Docker / AWS EC2 배포, GitHub Actions CI/CD |
+| [김유선](https://github.com/kimyuseon) | 회원가입 / 로그인 / 마이페이지 (user 백엔드 + 프론트엔드) |
+| [김평일](https://github.com/Pyeongil) | Gemini 프롬프트 설계, 면접 설정 페이지, Gemini API 클라이언트 |
+| [이영진](https://github.com/ilove0628yj-w) | 면접 페이지, 세션 진행 (interview 도메인 백엔드 + 프론트엔드) |
+| [박지영](https://github.com/battlegroundcallofduty) | 피드백 생성 / 조회, 면접 history (feedback 백엔드 + 프론트엔드) |
 
 ---
 
 ## 관련 문서
 
 - [발표자료](https://docs.google.com/presentation/d/1MYbXQMjmEeGZ17ftSzQG7iYQLF4TTpXkVjnmqI-kvqE/edit?usp=sharing)
-- [서비스 플로우차트](https://gabriel-1204.github.io/Pdback/assets/flowchart.html)
-- [DB 스키마](https://gabriel-1204.github.io/Pdback/assets/pdback-schema%20(1).html)
+- [서비스 플로우차트 계획](https://battlegroundcallofduty.github.io/Pdback_live/assets/flowchart.html)
+- [초반 DB 스키마](https://battlegroundcallofduty.github.io/Pdback_live/assets/pdback-schema%20(1).html)
 
 ---
 
@@ -120,7 +121,13 @@ graph TD
 
 ## 주요 기능
 
-### 면접 설정 · 진행 · AI 분석
+### 1️⃣ 회원가입 · 로그인
+| 회원가입 | 로그인 |
+|:---------:|:---------:|                                                                                                              
+| ![면접설정](assets/register.png) | ![면접](assets/login.png) | 
+<br>
+
+### 2️⃣ 면접 설정 · 진행 · AI 분석
 
 - **AI 면접 진행**: Gemini 기반 면접관 페르소나로 실시간 질의응답
 - **자세 / 시선 분석**: MediaPipe로 자세 안정성 및 카메라 시선 처리율 실시간 측정
@@ -128,8 +135,9 @@ graph TD
 
 ![면접설정](assets/interview_setting.png)
 ![면접](assets/interview.png)
+<br>
 
-### AI 피드백 생성
+### 3️⃣ AI 피드백 생성
 
 - 질문별 점수, 기술 / 논리 / 키워드 종합 점수, 강점 및 개선점 제공
 - 자세·시선 점수와 코멘트 자동 생성
@@ -137,18 +145,20 @@ graph TD
 ![피드백1](assets/feedback1.png)
 ![피드백2](assets/feedback2.png)
 ![피드백3](assets/feedback3.png)
+<br>
 
-### 면접 히스토리
+### 4️⃣ 면접 히스토리
 
 ![히스토리](assets/history.png)
 
 - 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+<br>
 
-### 마이페이지 통계
+### 5️⃣ 마이페이지
 
 ![마이페이지](assets/mypage.png)
 
-- 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+- 프로필 수정, 비밀번호 변경 및 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
 
 ---
 
@@ -157,7 +167,7 @@ graph TD
 **담당 범위**: `feedback` 도메인 전체 (백엔드 + 프론트엔드)  
 `app/domain/feedback/`, `frontend/pages/feedback.html`, `frontend/pages/history.html`, `frontend/js/feedback.js`, `frontend/js/history.js`
 
-### 피드백 생성 및 조회 (feedback.html)
+### - 피드백 생성 및 조회 (feedback.html)
 
 면접 종료 후 면접 세션 데이터를 바탕으로 AI 피드백을 생성하고 결과를 시각화합니다.
 
@@ -177,7 +187,7 @@ graph TD
 - **자세/태도 점수 산출**: 시선 처리율(eye_contact)과 자세 안정성(posture_safety_rate)을 가중 평균하여 태도 점수 계산, 조합별 9가지 코멘트 자동 생성
 - **응답 시간 표시**: 질문별 내 답변 옆에 소요 시간(duration_seconds)을 함께 표시
 
-### 면접 히스토리 (history.html)
+### - 면접 히스토리 (history.html)
 
 사용자의 과거 면접 목록을 최신순으로 조회하고, 점수 추이를 바 차트로 시각화합니다.
 
@@ -185,10 +195,9 @@ graph TD
 - **페이지네이션**: `page` / `size` 파라미터 기반 서버 사이드 페이지네이션 구현
 - **방어 로직**: 면접 데이터가 없는 피드백(DB 정리 후 고아 데이터)은 응답에서 자동 스킵
 
-### 마이페이지 통계 연동
+### - 마이페이지 통계 연동
 
 - `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
-- KST 기준 이번 주 월요일 00:00 이후 데이터만 필터링하여 주간 통계 산출
 
 ---
 
@@ -209,14 +218,14 @@ graph TD
 
 ## 로컬 실행 방법
 
-### 환경 설정
+### ▪️ 환경 설정
 
 ```bash
 cp .env.example .env
 # .env 파일에서 GEMINI_API_KEY, MONGODB_URL 등 설정
 ```
 
-### pip으로 실행
+### ▪️ pip으로 실행
 
 ```bash
 python -m venv venv
@@ -225,7 +234,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### Docker로 실행
+### ▪️ Docker로 실행
 
 ```bash
 docker compose up --build
@@ -235,7 +244,7 @@ docker compose up --build
 
 ## 회고 및 개선사항
 
-### 기억에 남는 구현
+### 💡 기억에 남는 구현
 
 **N+1 쿼리 문제 해결**
 
@@ -263,7 +272,7 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 ---
 
-### 추후 개선하고 싶은 사항
+### ✍️ 추후 개선하고 싶은 사항
 
 **히스토리 페이지 시간 표시**  
 같은 날 면접을 여러 번 진행하면 목록에서 구분이 어렵습니다. 날짜만 표시하는 현재 방식에서 시:분까지 추가하면 UX가 개선될 것입니다.
@@ -276,7 +285,7 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 ---
 
-### 발표 후 수렴한 피드백 (향후 기능 아이디어)
+### 🔖 발표 후 받은 피드백 (향후 기능 아이디어)
 
 - 카메라 영점 보정 기능 (자세·시선 측정 전 기준점 설정)
 - 마이크 볼륨 세부 컨트롤 및 감도 조정
