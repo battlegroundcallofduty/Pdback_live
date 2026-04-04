@@ -211,11 +211,11 @@ graph TD
   if interview is None:
       continue  # 면접 데이터가 없는 피드백 스킵
   ```
-  전체 면접 플로우 없이 UI를 빠르게 확인하기 위해 `feedback_test.py`, `history_test.py`로 DB에 더미 데이터를 직접 삽입해 로컬 테스트를 진행했습니다.
+  - 전체 면접 플로우 없이 UI를 빠르게 확인하기 위해 `feedback_test.py`, `history_test.py`로 DB에 더미 데이터를 직접 삽입해 로컬 테스트를 진행
 
 ### 3. 마이페이지 통계 연동
 
-- `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계. 이번 주 기준은 KST 월요일 00:00으로 계산하며, `created_at`의 타임존 정보 유무에 관계없이 KST로 통일해 비교합니다.
+- `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계. 이번 주 기준은 KST 월요일 00:00으로 계산하며, `created_at`의 타임존 정보 유무에 관계없이 KST로 통일해 비교
 
 ---
 
