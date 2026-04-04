@@ -428,7 +428,7 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 **4. `bad_posture_count`에서 `attitude_score`로 모델 설계 수정**
 
-초기에는 불량 자세 횟수(`bad_posture_count`)를 저장하려 했습니다. 피드백 페이지 UI를 설계하면서 횟수 자체보다 종합 태도 점수가 더 직관적이고, 현재 수집 데이터로는 의미 있는 `bad_posture_count`를 산출하기도 어렵다는 판단을 했습니다.  
+초기에는 불량 자세 횟수(`bad_posture_count`)를 저장하려 했습니다. 피드백 페이지를 설계하면서 현재 수집 데이터로는 의미 있는 `bad_posture_count`를 산출하기도 어렵다는 판단을 했습니다.  
 시선 처리율(`eye_contact`)과 자세 안정성(`posture_safety_rate`)을 가중 평균한 `attitude_score`로 필드를 교체하여, 피드백 페이지에서 바로 활용할 수 있는 형태로 정리했습니다.
 
 ---
