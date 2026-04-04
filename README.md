@@ -211,7 +211,7 @@ graph TD
   if interview is None:
       continue  # 면접 데이터가 없는 피드백 스킵
   ```
-  - 전체 면접 플로우 없이 UI를 빠르게 확인하기 위해 `feedback_test.py`, `history_test.py`로 DB에 더미 데이터를 직접 삽입해 로컬 테스트를 진행
+- 전체 면접 플로우 없이 UI를 빠르게 확인하기 위해 `feedback_test.py`, `history_test.py`로 DB에 더미 데이터를 직접 삽입해 로컬 테스트를 진행
 
 ### 3. 마이페이지 통계 연동
 
