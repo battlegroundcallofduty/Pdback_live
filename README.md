@@ -217,7 +217,7 @@ graph TD
 
 ### + 코드리뷰 & 버그 수정 🐛
 
-#### 1. Pydantic v2 `model_` 예약어 경고
+#### (1) Pydantic v2 `model_` 예약어 경고
 
 `model_`로 시작하는 필드를 Pydantic 모델에 정의하면 v2에서 `UserWarning`이 발생하고, 일부 환경에서 필드가 무시될 가능성이 있기 때문에 `ConfigDict(protected_namespaces=())`를 추가해 해결했습니다.
 
@@ -229,7 +229,7 @@ class QuestionFeedbackResponse(BaseModel):
     model_name: str
 ```  
 
-#### 2. JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
+#### (2) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
 
 피드백 페이지 질문 아코디언을 `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩했습니다.  
 DOM이 다시 렌더링될 때 핸들러가 중복 등록되어 클릭 한 번에 아코디언이 두 번 토글되는 버그가 발생했습니다.  
@@ -246,7 +246,7 @@ qContainer.addEventListener('click', function(e) {
 });
 ```  
 
-#### 3. 페이지네이션 버튼이 동작하지 않는 버그
+#### (3) 페이지네이션 버튼이 동작하지 않는 버그
 
 히스토리 페이지의 페이지네이션 버튼을 눌러도 아무 반응이 없었습니다.  
 `renderPagination()`에서 HTML 문자열로 버튼을 생성하면서 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 있어 전역에서 접근할 수 없었습니다.  
@@ -263,7 +263,7 @@ window.goPage = async function(page) {
 };
 ```  
 
-#### 4. 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+#### (4) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
 
 마지막 세션이 끝나고 "다음" 버튼을 누르면 피드백 생성 API 응답을 기다리지 않고 바로 히스토리 페이지로 이동했습니다.  
 피드백이 저장되지 않은 상태로 히스토리가 열려 방금 한 면접이 목록에 없는 문제였습니다.  
@@ -282,7 +282,7 @@ nextSessionBtn.addEventListener("click", async function () {
 });
 ```  
 
-#### 5. NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+#### (5) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
 
 히스토리에서 방금 생성된 면접에 "NEW" 뱃지를 붙이려고 `Date.now() - new Date(item.created_at)`로 경과 시간을 계산했습니다.  
 MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱하여 9시간 오차가 발생했고, 결과적으로 뱃지가 표시되지 않는 오류가 발생했습니다.  
@@ -297,7 +297,7 @@ const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created
 const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
 ```  
 
-#### 6. `to_list(length=None)` 무제한 메모리 적재 — 페이지네이션으로 해결
+#### (6) `to_list(length=None)` 무제한 메모리 적재 — 페이지네이션으로 해결
 
 히스토리 목록 조회 시 `to_list(length=None)`으로 사용자의 모든 피드백을 한 번에 메모리에 올리고 있었습니다.  
 면접 기록이 쌓일수록 메모리 사용량이 제한 없이 증가하는 구조였습니다.  
@@ -311,7 +311,7 @@ docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
 docs = await db["feedbacks"].find({"user_id": user_id}).skip(skip).limit(size).to_list(length=None)
 ```  
 
-#### 7. 인증 없이 타인의 히스토리 조회 가능
+#### (7) 인증 없이 타인의 히스토리 조회 가능
 
 초기 구현에서 `GET /feedback/history`가 `user_id`를 쿼리 파라미터로 직접 받는 구조였습니다. 로그인 없이 임의의 `user_id`를 입력하면 해당 사용자의 면접 히스토리 전체가 노출되는 취약점이었습니다.  
 코드리뷰에서 보안 이슈로 지적받아, 다른 팀원분이 만든 JWT 토큰 기반 인증 의존성을 주입하고 토큰에서 `user_id`를 추출하도록 수정했습니다. 다른 엔드포인트도 동일하게 `Depends(get_current_user)`로 통일했습니다.
@@ -328,7 +328,7 @@ async def api_get_history(current_user: str = Depends(get_current_user)):
     return await get_history(current_user)
 ```  
 
-#### 8. 응답 시간 측정 기준 오류 — 질문 생성 시점 → 프론트 측정값으로 교체
+#### (8) 응답 시간 측정 기준 오류 — 질문 생성 시점 → 프론트 측정값으로 교체
 
 서버에서 `started_at`(질문 저장 시각)과 `ended_at`(답변 제출 시각)의 차이로 응답 시간을 계산했습니다.  
 이 방식은 AI가 질문을 생성하는 시간과 사용자가 질문을 읽는 시간까지 포함되어 실제 사용자의 답변 시간보다 훨씬 길게 측정되는 문제가 있었습니다.  
