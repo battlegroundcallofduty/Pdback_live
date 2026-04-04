@@ -278,7 +278,7 @@ nextSessionBtn.addEventListener("click", async function () {
     try {
         await fetch("/api/v1/feedback/generate", { method: "POST", ... });
     } catch (e) {
-        // 피드백 저장 실패해도 이동은 진행
+        // 피드백 저장 실패해도 면접은 완료된 상태이므로 히스토리 페이지로 이동은 항상 진행!
     }
     window.location.href = '/history';
 });
@@ -299,11 +299,11 @@ const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created
 const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
 ```  
 
-#### (6) `to_list(length=None)` 무제한 메모리 적재 — 페이지네이션으로 해결
+#### (6) 전체 피드백 무제한 메모리 적재 — 페이지네이션으로 해결
 
 히스토리 목록 조회 시 `to_list(length=None)`으로 사용자의 모든 피드백을 한 번에 메모리에 올리고 있었습니다.  
 면접 기록이 쌓일수록 메모리 사용량이 제한 없이 증가하는 구조였습니다.  
-코드리뷰에서 지적받은 뒤, 서버 사이드 페이지네이션(`skip` + `limit`)을 도입하여 요청당 `size`건만 조회하도록 개선했습니다.
+코드리뷰에서 지적받은 뒤, 서버 사이드 페이지네이션(`skip` + `limit`)을 도입하여 요청당 `size`건만 조회하도록 개선했습니다. `limit(size)`로 건수가 제한되므로 `to_list`에 실제로 올라오는 데이터는 최대 `size`건입니다.
 
 ```python
 # Before: 전체 피드백을 메모리에 한꺼번에 로드
