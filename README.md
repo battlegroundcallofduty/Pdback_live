@@ -406,14 +406,13 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 **2. 팀 간 인터페이스 동기화**
 
 피드백 도메인은 다른 팀원이 만든 데이터들을 조회하거나 가공하는 구조입니다.  
-토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.  
-실제로 interview 도메인의 `_id`가 UUID 문자열임을 파악하지 못한 채 `ObjectId(session_id)`로 변환해 조회하다 피드백 생성 전체가 실패하는 결함이 코드리뷰에서 발견되었습니다. 이후 ID 타입 같은 인터페이스 관련 변경사항은 슬랙으로 먼저 공유하는 것을 팀 내에서 실천했습니다.
+토큰 필드명(access_token), interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.  
 
 **3. 에러 처리 체계화**
 
 초기에는 에러 처리가 일관성이 없었습니다.  
 비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 이를 잡지 못해 원인과 무관하게 전부 500으로 응답하는 문제였습니다.  
-팀장님의 코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
+코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
 
 **4. `bad_posture_count`에서 `attitude_score`로 모델 설계 수정**
 
