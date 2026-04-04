@@ -30,7 +30,7 @@ MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성
 Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 - **개발 기간**: 2026.03.12 - 2026.04.02
-- **팀 구성**: 5인
+- **구성**: 5인 팀 프로젝트
 - **배포 환경**: AWS EC2 + Docker + GitHub Actions CI/CD
 
 | 이름 | 역할 |
