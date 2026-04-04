@@ -198,7 +198,8 @@ graph TD
 
 ### 2. 면접 히스토리 (history.html)
 
-사용자의 과거 면접 목록을 최신순으로 조회하고, 점수 추이를 바 차트로 시각화합니다.
+사용자의 과거 면접 목록을 최신순으로 조회하고, 점수 추이를 바 차트로 시각화합니다.  
+전체 면접 플로우 없이 UI를 빠르게 확인하기 위해 `feedback_test.py`, `history_test.py`로 DB에 더미 데이터를 직접 삽입해 로컬 테스트를 진행했습니다.
 
 - **N+1 쿼리 제거**: 피드백 목록 조회 후 면접 데이터를 건별로 조회하는 방식에서 MongoDB `$in` 연산자로 한 번에 일괄 조회하도록 개선
 - **페이지네이션**: `page` / `size` 파라미터 기반 서버 사이드 페이지네이션 구현
@@ -366,8 +367,18 @@ duration_seconds = request.duration_seconds if request.duration_seconds is not N
 
 ```bash
 cp .env.example .env
-# .env 파일에서 GEMINI_API_KEY, MONGODB_URL 등 설정
 ```
+
+`.env` 파일에 아래 항목을 채워넣습니다.
+
+| 변수 | 설명 |
+|------|------|
+| `GEMINI_API_KEY` | Google Gemini API 키 |
+| `MONGODB_URL` | MongoDB 연결 URI (예: `mongodb://localhost:27017`) |
+| `MONGO_DB_NAME` | 사용할 데이터베이스 이름 |
+| `DEBUG` | 디버그 모드 (`true` / `false`) |
+| `CORS_ORIGINS` | 허용할 CORS 출처 (예: `http://localhost:8000`) |
+| `SECRET_KEY` | JWT 서명용 시크릿 키 |
 
 ### ▪️ pip으로 실행
 
@@ -383,6 +394,7 @@ uvicorn app.main:app --reload
 ```bash
 docker compose up --build
 ```
+
 
 ---
 
