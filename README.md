@@ -171,8 +171,20 @@ graph TD
 
 면접 종료 후 면접 세션 데이터를 바탕으로 AI 피드백을 생성하고 결과를 시각화합니다.
 
-- **중복 생성 차단**: 동일 면접에 대해 피드백이 이미 존재하면 `409 Conflict` 반환
+- **중복 생성 차단**: 동일 면접에 대해 피드백이 이미 존재하면 `409 Conflict` 반환 — 면접 종료 직후 새로고침이나 버튼 중복 클릭 시 같은 document가 두 번 삽입되는 것을 방지
+
+  ```python
+  existing = await db["feedbacks"].find_one({"interview_id": session_id})
+  if existing:
+      raise HTTPException(status_code=409, detail="이미 생성된 피드백이 존재합니다. 히스토리 페이지를 참고해주세요.")
+  ```
+
 - **소유자 검증**: 타인의 면접 데이터에 대한 피드백 생성/조회 방지 (`403 Forbidden`)
+
+  ```python
+  if interview.user_id != user_id:
+      raise HTTPException(status_code=403, detail="본인의 면접에 대한 피드백만 생성할 수 있습니다.")
+  ```
 - **AI 피드백 파싱**: Gemini 응답이 마크다운 코드블록으로 래핑되는 경우를 대비해 정규식으로 벗겨낸 뒤 JSON 파싱 — 외부 AI API 응답을 신뢰하지 않는 방어적 처리
 
   ```python
@@ -195,9 +207,158 @@ graph TD
 - **페이지네이션**: `page` / `size` 파라미터 기반 서버 사이드 페이지네이션 구현
 - **방어 로직**: 면접 데이터가 없는 피드백(DB 정리 후 고아 데이터)은 응답에서 자동 스킵
 
+  ```python
+  interview = interviews.get(feedback_doc.interview_id)
+  if interview is None:
+      continue  # 면접 데이터가 없는 피드백 스킵
+  ```
+
 ### + 마이페이지 통계 연동
 
 - `GET /feedback/stats` 엔드포인트로 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+
+---
+
+### 코드리뷰 & 버그 수정
+
+#### 1. Pydantic v2 `model_` 예약어 경고
+
+`model_`로 시작하는 필드를 Pydantic 모델에 정의하면 v2에서 `UserWarning`이 발생하고, 일부 환경에서 필드가 무시되었습니다.  
+`ConfigDict(protected_namespaces=())`를 추가해 해결했습니다.
+
+```python
+from pydantic import BaseModel, ConfigDict
+
+class QuestionFeedbackResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    model_name: str
+```
+
+---
+
+#### 2. JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
+
+피드백 페이지 질문 아코디언을 `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩했습니다.  
+DOM이 다시 렌더링될 때 핸들러가 중복 등록되어 클릭 한 번에 아코디언이 두 번 토글되는 버그가 발생했습니다.  
+이벤트 위임 방식으로 변경해 해결했습니다.
+
+```javascript
+// Before
+item.innerHTML = `<div class="question-header" onclick="toggleQuestion(this)"> ... </div>`
+
+// After — 컨테이너에 이벤트 위임 한 번만 등록
+qContainer.addEventListener('click', function(e) {
+  const header = e.target.closest('.question-header');
+  if (header) toggleQuestion(header);
+});
+```
+
+---
+
+#### 3. 페이지네이션 버튼이 동작하지 않는 버그
+
+히스토리 페이지의 페이지네이션 버튼을 눌러도 아무 반응이 없었습니다.  
+`renderPagination()`에서 HTML 문자열로 버튼을 생성하면서 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 있어 전역에서 접근할 수 없었습니다.  
+`window.goPage`로 전역 노출하고, 유효하지 않은 페이지 번호 요청도 차단했습니다.
+
+```javascript
+// Before
+async function goPage(page) { ... }
+
+// After
+window.goPage = async function(page) {
+  if (page < 1 || (totalPages > 0 && page > totalPages)) return;
+  await load(page);
+};
+```
+
+---
+
+#### 4. 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+
+마지막 세션이 끝나고 "다음" 버튼을 누르면 피드백 생성 API 응답을 기다리지 않고 바로 히스토리 페이지로 이동했습니다.  
+피드백이 저장되지 않은 상태로 히스토리가 열려 방금 한 면접이 목록에 없는 문제였습니다.  
+피드백 생성 요청을 `await`한 뒤에 페이지를 이동하도록 수정했습니다.
+
+```javascript
+nextSessionBtn.addEventListener("click", async function () {
+    nextSessionBtn.disabled = true;
+    nextSessionBtn.textContent = "피드백 저장 중...";
+    try {
+        await fetch("/api/v1/feedback/generate", { method: "POST", ... });
+    } catch (e) {
+        // 피드백 저장 실패해도 이동은 진행
+    }
+    window.location.href = '/history';
+});
+```
+
+---
+
+#### 5. NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+
+히스토리에서 방금 생성된 면접에 "NEW" 뱃지를 붙이려고 `Date.now() - new Date(item.created_at)`로 경과 시간을 계산했습니다.  
+MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱하여 9시간 오차가 발생했고, 결과적으로 뱃지가 아예 표시되지 않거나 엉뚱한 항목에 붙었습니다.  
+`'Z'`를 명시적으로 붙여 UTC로 강제 처리했습니다.
+
+```javascript
+// Before
+const isNew = (Date.now() - new Date(item.created_at).getTime()) < 10 * 60 * 1000;
+
+// After
+const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created_at + 'Z';
+const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
+```
+
+---
+
+#### 6. `to_list(length=None)` 무제한 메모리 적재 — 페이지네이션으로 해결
+
+히스토리 목록 조회 시 `to_list(length=None)`으로 사용자의 모든 피드백을 한 번에 메모리에 올리고 있었습니다. 면접 기록이 쌓일수록 메모리 사용량이 제한 없이 증가하는 구조였습니다.  
+코드리뷰에서 지적받은 뒤, 서버 사이드 페이지네이션(`skip` + `limit`)을 도입하여 요청당 `size`건만 조회하도록 개선했습니다.
+
+```python
+# Before: 전체 피드백을 메모리에 한꺼번에 로드
+docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
+
+# After: skip + limit으로 페이지 단위 조회
+docs = await db["feedbacks"].find({"user_id": user_id}).skip(skip).limit(size).to_list(length=None)
+```
+
+---
+
+#### 7. 인증 없이 타인의 히스토리 조회 가능
+
+초기 구현에서 `GET /feedback/history`가 `user_id`를 쿼리 파라미터로 직접 받는 구조였습니다. 로그인 없이 임의의 `user_id`를 입력하면 해당 사용자의 면접 히스토리 전체가 노출되는 취약점이었습니다.  
+코드리뷰에서 보안 이슈로 지적받아, JWT 토큰 기반 인증 의존성을 주입하고 토큰에서 `user_id`를 추출하도록 수정했습니다. 다른 엔드포인트도 동일하게 `Depends(get_current_user)`로 통일했습니다.
+
+```python
+# Before: 누구나 user_id를 직접 입력해 조회 가능
+@router.get("/history")
+async def api_get_history(user_id: str):
+    return await get_history(user_id)
+
+# After: JWT에서 user_id 추출 — 본인 데이터만 조회
+@router.get("/history")
+async def api_get_history(current_user: str = Depends(get_current_user)):
+    return await get_history(current_user)
+```
+
+---
+
+#### 8. 응답 시간 측정 기준 오류 — 질문 생성 시점 → 프론트 측정값으로 교체
+
+서버에서 `started_at`(질문 저장 시각)과 `ended_at`(답변 제출 시각)의 차이로 응답 시간을 계산했습니다.  
+이 방식은 AI가 질문을 생성하는 시간과 사용자가 질문을 읽는 시간까지 포함되어 실제 발화 시간보다 훨씬 길게 측정되는 문제가 있었습니다.  
+프론트엔드에서 "답변 시작" 버튼 클릭부터 "답변 완료" 버튼 클릭까지의 시간을 직접 측정해 `duration_seconds`로 전송하도록 변경하고, 서버는 이 값을 우선 사용하도록 수정했습니다.
+
+```python
+# Before: 서버에서 질문 저장 시각 기준 계산 — 질문 생성·읽기 시간 포함
+duration_seconds = int((ended_at - started_at).total_seconds())
+
+# After: 프론트에서 측정한 실제 발화 시간 우선 사용
+duration_seconds = request.duration_seconds if request.duration_seconds is not None else int((ended_at - started_at).total_seconds())
+```
 
 ---
 
@@ -263,12 +424,19 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 **팀 간 인터페이스 동기화**
 
 피드백 도메인은 다른 팀원이 만든 데이터들을 조회하거나 가공하는 구조입니다.  
-토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.
+토큰 필드명, interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.  
+실제로 interview 도메인의 `_id`가 UUID 문자열임을 파악하지 못한 채 `ObjectId(session_id)`로 변환해 조회하다 피드백 생성 전체가 실패하는 결함이 코드리뷰에서 발견되었습니다. 이후 ID 타입 같은 인터페이스 관련 변경사항은 슬랙으로 먼저 공유하는 것을 팀 내에서 실천했습니다.
 
 **에러 처리 체계화**
 
 초기에는 에러 처리가 일관성이 없었습니다.  
+비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 이를 잡지 못해 원인과 무관하게 전부 500으로 응답하는 문제였습니다.  
 팀장님의 코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
+
+**`bad_posture_count`에서 `attitude_score`로 모델 설계 수정**
+
+초기에는 불량 자세 횟수(`bad_posture_count`)를 저장하려 했습니다. 피드백 페이지 UI를 설계하면서 횟수 자체보다 종합 태도 점수가 더 직관적이고, 현재 수집 데이터로는 의미 있는 `bad_posture_count`를 산출하기도 어렵다는 판단을 했습니다.  
+시선 처리율(`eye_contact`)과 자세 안정성(`posture_safety_rate`)을 가중 평균한 `attitude_score`로 필드를 교체하여, 피드백 페이지에서 바로 활용할 수 있는 형태로 정리했습니다.
 
 ---
 
