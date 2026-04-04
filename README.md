@@ -30,12 +30,12 @@ MediaPipe 기반의 Vision AI로 자세와 시선을 분석하고, STT로 음성
 Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 - **개발 기간**: 2026.03.12 - 2026.04.02
-- **팀 구성**: 5인 (백엔드 Python, FastAPI + 프론트엔드 html, Vanilla JS)
+- **구성**: 5인 팀 프로젝트
 - **배포 환경**: AWS EC2 + Docker + GitHub Actions CI/CD
 
 | 이름 | 역할 |
 |------|------|
-| [김상혁](https://github.com/gabriel-1204) | 초기 세팅, 인프라, Docker / AWS EC2 배포, GitHub Actions CI/CD |
+| [김상혁](https://github.com/gabriel-1204) | 초기 세팅, 인프라, Docker / AWS EC2 배포, CI/CD, mediapipe |
 | [김유선](https://github.com/kimyuseon) | 회원가입 / 로그인 / 마이페이지 (user 백엔드 + 프론트엔드), 인증 |
 | [김평일](https://github.com/Pyeongil) | Gemini 프롬프트 설계, 면접 설정 페이지, Gemini API 클라이언트 |
 | [이영진](https://github.com/ilove0628yj-w) | 면접 페이지, 세션 진행 (interview 도메인 백엔드 + 프론트엔드) |
@@ -125,7 +125,6 @@ graph TD
 | 회원가입 | 로그인 |
 |:---------:|:---------:|                                                                                                              
 | ![면접설정](assets/register.png) | ![면접](assets/login.png) | 
-<br>
 
 ### 2️⃣ 면접 설정 · 진행 · AI 분석
 
@@ -135,7 +134,6 @@ graph TD
 
 ![면접설정](assets/interview_setting.png)
 ![면접](assets/interview.png)
-<br>
 
 ### 3️⃣ AI 피드백 생성
 
@@ -145,14 +143,12 @@ graph TD
 ![피드백1](assets/feedback1.png)
 ![피드백2](assets/feedback2.png)
 ![피드백3](assets/feedback3.png)
-<br>
 
 ### 4️⃣ 면접 히스토리
 
 ![히스토리](assets/history.png)
 
 - 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
-<br>
 
 ### 5️⃣ 마이페이지
 
