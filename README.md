@@ -410,8 +410,7 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 **3. 에러 처리 체계화**
 
-초기에는 에러 처리가 일관성이 없었습니다.  
-비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 이를 잡지 못해 원인과 무관하게 전부 500으로 응답하는 문제였습니다.  
+초기에는 에러 처리가 일관성이 없었습니다. 비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 이를 잡지 못해 원인과 무관하게 전부 500으로 응답하는 문제가 있었습니다.  
 코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
 
 **4. `bad_posture_count`에서 `attitude_score`로 모델 설계 수정**
