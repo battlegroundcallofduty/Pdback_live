@@ -59,9 +59,10 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 ![MongoDB](https://img.shields.io/badge/MongoDB-Motor_Async-47A248?style=flat-square&logo=mongodb&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
 
-### AI / ML
+### AI / Interview Engine
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-API-4285F4?style=flat-square&logo=google&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-Vision_AI-0097A7?style=flat-square&logo=google&logoColor=white)
+![Web Speech API](https://img.shields.io/badge/Web_Speech_API-STT-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
 
 ### Frontend
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
