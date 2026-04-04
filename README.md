@@ -228,7 +228,7 @@ from pydantic import BaseModel, ConfigDict
 
 class QuestionFeedbackResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
-    model_name: str
+    model_answer: str
 ```  
 
 #### (2) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
@@ -352,10 +352,10 @@ duration_seconds = request.duration_seconds if request.duration_seconds is not N
 
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
-| `POST` | `/feedback/generate` | 면접 종료 후 AI 피드백 생성 | JWT 필요 |
-| `GET` | `/feedback/history` | 내 면접 히스토리 목록 조회 (페이지네이션) | JWT 필요 |
-| `GET` | `/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
-| `GET` | `/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
+| `POST` | `/api/v1/feedback/generate` | 면접 종료 후 AI 피드백 생성 | JWT 필요 |
+| `GET` | `/api/v1/feedback/history` | 내 면접 히스토리 목록 조회 (페이지네이션) | JWT 필요 |
+| `GET` | `/api/v1/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
+| `GET` | `/api/v1/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
 
 > 서버 실행 후 `http://localhost:8000/docs` 에서 Swagger UI로 전체 API 확인 가능
 
@@ -375,7 +375,7 @@ cp .env.example .env
 |------|------|
 | `GEMINI_API_KEY` | Google Gemini API 키 |
 | `MONGODB_URL` | MongoDB 연결 URI (예: `mongodb://localhost:27017`) |
-| `MONGO_DB_NAME` | 사용할 데이터베이스 이름 |
+| `MONGODB_DB_NAME` | 사용할 데이터베이스 이름 |
 | `DEBUG` | 디버그 모드 (`true` / `false`) |
 | `CORS_ORIGINS` | 허용할 CORS 출처 (예: `http://localhost:8000`) |
 | `SECRET_KEY` | JWT 서명용 시크릿 키 |
