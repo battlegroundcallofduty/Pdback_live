@@ -98,7 +98,7 @@ graph TD
     end
 
     subgraph AI["AI Services"]
-        L[Google Gemini API<br/>답변 분석 & 피드백]
+        L[Google Gemini API<br/>답변 분석 &amp; 피드백]
         M[MediaPipe<br/>자세 & 시선 분석]
     end
 
