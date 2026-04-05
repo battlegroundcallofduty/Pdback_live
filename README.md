@@ -315,7 +315,7 @@ duration_seconds = request.duration_seconds if request.duration_seconds is not N
 
 ## API 엔드포인트
 
-### Feedback
+### Feedback (담당 파트)
 
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
@@ -324,7 +324,8 @@ duration_seconds = request.duration_seconds if request.duration_seconds is not N
 | `GET` | `/api/v1/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
 | `GET` | `/api/v1/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
 
-> 서버 실행 후 `http://localhost:8000/docs` 에서 Swagger UI로 전체 API 확인 가능
+### 전체 API (Swagger UI)
+![엔드포인트](assets/api_endpoint.png)
 
 ---
 
