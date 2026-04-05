@@ -79,44 +79,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ## 프로젝트 구조
 
-```mermaid
-graph TD
-    subgraph Frontend["Frontend (Vanilla JS)"]
-        A[index.html<br/>랜딩] --> B[login.html<br/>로그인]
-        B --> C[interview-setup.html<br/>면접 설정]
-        C --> D[interview.html<br/>면접 진행]
-        D --> E[feedback.html<br/>피드백 결과]
-        E --> F[history.html<br/>면접 히스토리]
-        B --> G[mypage.html<br/>마이페이지]
-    end
-
-    subgraph Backend["Backend (FastAPI)"]
-        H[main.py<br/>앱 진입점]
-        H --> I[user<br/>인증/유저]
-        H --> J[interview<br/>면접 세션]
-        H --> K[feedback<br/>피드백/히스토리]
-    end
-
-    subgraph AI["AI Services"]
-        L[Google Gemini API<br/>답변 분석 &amp; 피드백]
-        M[MediaPipe<br/>자세 & 시선 분석]
-    end
-
-    subgraph DB["Database"]
-        N[(MongoDB<br/>users / interviews / feedbacks)]
-    end
-
-    E -- "POST /feedback/generate" --> K
-    F -- "GET /feedback/history" --> K
-    G -- "GET /feedback/stats" --> K
-    D -- "WebRTC + STT" --> J
-    J --> L
-    D --> M
-    K --> N
-    J --> N
-    I --> N
-```
-
+![구조](assets/mermaid_diagram.png)
 
 ---
 
