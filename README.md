@@ -182,7 +182,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ---
 
-### + 코드리뷰 & 버그 수정 🐛
+### 코드리뷰 & 트러블슈팅 🐛
 
 #### (1) 인증 없이 타인의 히스토리 조회 가능
 
@@ -229,19 +229,7 @@ duration_seconds = int((ended_at - started_at).total_seconds())
 duration_seconds = request.duration_seconds if request.duration_seconds is not None else int((ended_at - started_at).total_seconds())
 ```
 
-#### (4) Pydantic v2 `model_` 예약어 경고
-
-`model_`로 시작하는 필드를 Pydantic 모델에 정의하면 v2에서 `UserWarning`이 발생하고, 일부 환경에서 필드가 무시될 가능성이 있기 때문에 `ConfigDict(protected_namespaces=())`를 추가해 해결했습니다.
-
-```python
-from pydantic import BaseModel, ConfigDict
-
-class QuestionFeedbackResponse(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())
-    model_answer: str
-```  
-
-#### (5) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+#### (4) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
 
 마지막 세션이 끝나고 "다음" 버튼을 누르면 피드백 생성 API 응답을 기다리지 않고 바로 히스토리 페이지로 이동했습니다.  
 피드백이 저장되지 않은 상태로 히스토리가 열려 방금 한 면접이 목록에 없는 문제였습니다.  
@@ -260,9 +248,9 @@ nextSessionBtn.addEventListener("click", async function () {
 });
 ```  
 
-> 버그 수정했던 시점의 코드입니다. 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼이 생깁니다.
+> 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼 표시
 
-#### (6) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+#### (5) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
 
 히스토리에서 방금 생성된 면접에 "NEW" 뱃지를 붙이려고 `Date.now() - new Date(item.created_at)`로 경과 시간을 계산했습니다.  
 MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱하여 9시간 오차가 발생했고, 결과적으로 뱃지가 표시되지 않는 오류가 발생했습니다.  
@@ -277,7 +265,7 @@ const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created
 const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
 ```  
 
-#### (7) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
+#### (6) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
 
 피드백 페이지 질문 아코디언을 `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩했습니다.  
 DOM이 다시 렌더링될 때 핸들러가 중복 등록되어 클릭 한 번에 아코디언이 두 번 토글되는 버그가 발생했습니다.  
@@ -294,7 +282,7 @@ qContainer.addEventListener('click', function(e) {
 });
 ```  
 
-#### (8) 페이지네이션 버튼이 동작하지 않는 버그
+#### (7) 페이지네이션 버튼이 동작하지 않는 버그
 
 히스토리 페이지의 페이지네이션 버튼을 눌러도 아무 반응이 없었습니다.  
 `renderPagination()`에서 HTML 문자열로 버튼을 생성하면서 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 있어 전역에서 접근할 수 없었습니다.  
