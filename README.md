@@ -88,7 +88,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 ### 1️⃣ 회원가입 · 로그인
 | 회원가입 | 로그인 |
 |:---------:|:---------:|                                                                                                              
-| ![면접설정](assets/register.png) | ![면접](assets/login.png) | 
+| ![회원가입](assets/register.png) | ![로그인](assets/login.png) | 
 
 ### 2️⃣ 면접 설정 · 진행 · AI 분석
 
@@ -96,8 +96,9 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 - **자세 / 시선 분석**: MediaPipe로 자세 안정성 및 카메라 시선 처리율 실시간 측정
 - **음성 인식 (STT)**: Web Speech API로 답변 음성을 텍스트로 변환
 
-![면접설정](assets/interview_setting.png)
-![면접](assets/interview.png)
+| 면접 설정 | 면접 진행 |
+|:---------:|:---------:|
+| ![면접 설정](assets/interview_setting.png) | ![면접](assets/interview.png) |
 
 ### 3️⃣ AI 피드백 생성
 
@@ -110,15 +111,15 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ### 4️⃣ 면접 히스토리
 
-![히스토리](assets/history.png)
-
 - 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+
+![히스토리](assets/history.png)
 
 ### 5️⃣ 마이페이지
 
-![마이페이지](assets/mypage.png)
-
 - 프로필 수정, 비밀번호 변경 및 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+
+![마이페이지](assets/mypage.png)
 
 ---
 
