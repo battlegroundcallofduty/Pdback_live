@@ -13,6 +13,7 @@
 - [관련 문서](#관련-문서)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
+- [아키텍처 & 사용 흐름](#아키텍처--사용-흐름)
 - [주요 기능](#주요-기능)
 - [내 담당 기능 상세](#내-담당-기능-상세)
 - [API 엔드포인트](#api-엔드포인트)
@@ -79,7 +80,44 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ## 프로젝트 구조
 
-![구조](assets/mermaid_diagram.png)
+```mermaid
+graph TD
+    Root(["Pdback/"])
+
+    Root --> App["app/"]
+    App --> Main["main.py · config.py · database.py"]
+    App --> Api["api/v1/router.py"]
+    App --> Core["core/ · services/<br/>보안, Gemini 클라이언트"]
+    App --> Domain["domain/"]
+    Domain --> User["user/<br/>인증 · 회원"]
+    Domain --> Interview["interview/<br/>면접 세션"]
+    Domain --> Feedback["feedback/<br/>피드백 · 히스토리"]
+
+    Root --> Frontend["frontend/"]
+    Frontend --> Pages["pages/<br/>*.html"]
+    Frontend --> JS["js/<br/>*.js"]
+    Frontend --> CSS["css/common.css"]
+
+    Root --> Tests["tests/"]
+    Root --> Assets["assets/"]
+```
+
+---
+
+## 아키텍처 & 사용 흐름
+
+```mermaid
+flowchart TD
+    A["로그인 / 회원가입"] --> B["면접 설정"]
+    B --> C["면접 진행<br/>WebRTC 영상 + STT"]
+    C --> D["AI 피드백 생성"]
+    D --> E["피드백 결과 · 히스토리 · 마이페이지"]
+
+    C -.자세 · 시선 분석.-> MP[["MediaPipe"]]
+    D -.답변 분석 및 점수 산출.-> GM[["Google Gemini API"]]
+
+    A & B & C & D & E -.저장 / 조회.-> DB[("MongoDB")]
+```
 
 ---
 
@@ -88,7 +126,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 ### 1️⃣ 회원가입 · 로그인
 | 회원가입 | 로그인 |
 |:---------:|:---------:|                                                                                                              
-| ![면접설정](assets/register.png) | ![면접](assets/login.png) | 
+| ![회원가입](assets/register.png) | ![로그인](assets/login.png) | 
 
 ### 2️⃣ 면접 설정 · 진행 · AI 분석
 
@@ -96,8 +134,9 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 - **자세 / 시선 분석**: MediaPipe로 자세 안정성 및 카메라 시선 처리율 실시간 측정
 - **음성 인식 (STT)**: Web Speech API로 답변 음성을 텍스트로 변환
 
-![면접설정](assets/interview_setting.png)
-![면접](assets/interview.png)
+| 면접 설정 | 면접 진행 |
+|:---------:|:---------:|
+| ![면접 설정](assets/interview_setting.png) | ![면접](assets/interview.png) |
 
 ### 3️⃣ AI 피드백 생성
 
@@ -110,15 +149,15 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ### 4️⃣ 면접 히스토리
 
-![히스토리](assets/history.png)
-
 - 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+
+![히스토리](assets/history.png)
 
 ### 5️⃣ 마이페이지
 
-![마이페이지](assets/mypage.png)
-
 - 프로필 수정, 비밀번호 변경 및 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+
+![마이페이지](assets/mypage.png)
 
 ---
 
@@ -182,7 +221,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 
 ---
 
-### + 코드리뷰 & 버그 수정 🐛
+### + 코드리뷰 & 트러블슈팅 🐛
 
 #### (1) 인증 없이 타인의 히스토리 조회 가능
 
@@ -229,19 +268,7 @@ duration_seconds = int((ended_at - started_at).total_seconds())
 duration_seconds = request.duration_seconds if request.duration_seconds is not None else int((ended_at - started_at).total_seconds())
 ```
 
-#### (4) Pydantic v2 `model_` 예약어 경고
-
-`model_`로 시작하는 필드를 Pydantic 모델에 정의하면 v2에서 `UserWarning`이 발생하고, 일부 환경에서 필드가 무시될 가능성이 있기 때문에 `ConfigDict(protected_namespaces=())`를 추가해 해결했습니다.
-
-```python
-from pydantic import BaseModel, ConfigDict
-
-class QuestionFeedbackResponse(BaseModel):
-    model_config = ConfigDict(protected_namespaces=())
-    model_answer: str
-```  
-
-#### (5) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+#### (4) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
 
 마지막 세션이 끝나고 "다음" 버튼을 누르면 피드백 생성 API 응답을 기다리지 않고 바로 히스토리 페이지로 이동했습니다.  
 피드백이 저장되지 않은 상태로 히스토리가 열려 방금 한 면접이 목록에 없는 문제였습니다.  
@@ -260,9 +287,9 @@ nextSessionBtn.addEventListener("click", async function () {
 });
 ```  
 
-> 버그 수정했던 시점의 코드입니다. 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼이 생깁니다.
+> 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼 표시
 
-#### (6) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+#### (5) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
 
 히스토리에서 방금 생성된 면접에 "NEW" 뱃지를 붙이려고 `Date.now() - new Date(item.created_at)`로 경과 시간을 계산했습니다.  
 MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱하여 9시간 오차가 발생했고, 결과적으로 뱃지가 표시되지 않는 오류가 발생했습니다.  
@@ -277,7 +304,7 @@ const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created
 const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
 ```  
 
-#### (7) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
+#### (6) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
 
 피드백 페이지 질문 아코디언을 `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩했습니다.  
 DOM이 다시 렌더링될 때 핸들러가 중복 등록되어 클릭 한 번에 아코디언이 두 번 토글되는 버그가 발생했습니다.  
@@ -294,7 +321,7 @@ qContainer.addEventListener('click', function(e) {
 });
 ```  
 
-#### (8) 페이지네이션 버튼이 동작하지 않는 버그
+#### (7) 페이지네이션 버튼이 동작하지 않는 버그
 
 히스토리 페이지의 페이지네이션 버튼을 눌러도 아무 반응이 없었습니다.  
 `renderPagination()`에서 HTML 문자열로 버튼을 생성하면서 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 있어 전역에서 접근할 수 없었습니다.  
@@ -410,14 +437,15 @@ MongoDB는 UTC(국제표준시)로 시각을 저장하는데, 이번 주 면접 
 **DB 인덱스 추가**  
 현재 `feedbacks` 컬렉션에 인덱스가 없어, 사용자 데이터가 쌓일수록 히스토리 조회 쿼리(`user_id` 필터 + `created_at` 내림차순 정렬)가 컬렉션 전체를 풀스캔하게 됩니다. `(user_id, created_at)` 복합 인덱스를 추가하면 데이터가 증가해도 조회 성능을 일정하게 유지할 수 있습니다.
 
-**히스토리 페이지 시간 표시**  
-같은 날 면접을 여러 번 진행하면 목록에서 구분이 어렵습니다. 날짜만 표시하는 현재 방식에서 시:분까지 추가하면 UX가 개선될 것입니다.
+**피드백 DELETE 기능 추가**  
+현재 서비스에서는 피드백의 create(생성), read(조회) 기능만 가능합니다. 피드백을 삭제할 수 있는 delete(삭제) 기능을 추가하고 사용자가 본인의 피드백만 직접 삭제할 수 있도록 권한 로직도 강화하여 서비스의 완성도를 높이고 싶습니다.
 
-**히스토리 바 차트 정렬 기준 선택**  
-현재 최신순 5개를 고정 표시하고 있습니다. 면접 준비 목적의 사용자 입장에서는 최신순보다 최고 점수순이나 특정 직군 필터가 더 유용할 수 있어, 사용자가 정렬 기준을 선택할 수 있도록 개선하고 싶습니다.
-
-**피드백 페이지 예상 답변 시간 표시**  
+**피드백 페이지: 예상 답변 시간 표시**  
 현재 내 답변 소요 시간만 보여주고 있습니다. interview 모델에 이미 예상 답변 시간 필드가 존재하므로, 이를 활용해 모범 답안 옆에 "예상 시간 OO초"를 함께 표시하면 사용자가 답변 속도를 더 직관적으로 파악할 수 있습니다.
+
+**히스토리 페이지: 상단 바 차트 정렬 기준 추가/ 하단 목록 시간 표시**  
+현재 상단 바 차트에서 최신순 5개 데이터를 고정 표시하고 있습니다. 면접 준비 목적의 사용자 입장에서는 최신순보다 최고 점수순이나 특정 직군 필터가 더 유용할 수 있어, 사용자가 정렬 기준을 선택할 수 있도록 개선하고 싶습니다.  
+또한 같은 날 면접을 여러 번 진행하면 하단 피드백 목록에서 구분이 어렵습니다. 날짜만 표시하는 현재 방식에서 시:분까지 추가하면 UX가 개선될 것입니다.
 
 ---
 
