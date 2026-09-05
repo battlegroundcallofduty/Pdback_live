@@ -33,7 +33,7 @@ Google Gemini API가 질문별 피드백과 종합 점수를 산출합니다.
 - **개발 기간**: 2026.03.12 - 2026.04.02
 - **구성**: 5인 팀 프로젝트
 - **배포 환경**: AWS EC2 + Docker + GitHub Actions CI/CD
-- **원본 팀 레포**: [https://github.com/gabriel-1204/Pdback](https://github.com/gabriel-1204/Pdback)
+- [원본 팀 레포](https://github.com/gabriel-1204/Pdback)
 
 | 이름 | 역할 |
 |------|------|
