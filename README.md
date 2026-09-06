@@ -231,25 +231,25 @@ flowchart TD
 
 ### (1) 인증 없이 타인의 히스토리 조회 가능
 
-**문제** : `GET /feedback/history`가 `user_id`를 쿼리 파라미터로 직접 받는 구조. 로그인 없이 임의의 `user_id`만 넣으면 해당 사용자의 면접 히스토리 전체가 노출됨.
+**문제** : `GET /feedback/history/{user_id}`가 `user_id`를 URL 경로에 직접 받는 구조. 로그인 없이 URL의 `user_id`만 바꿔 넣으면 해당 사용자의 면접 히스토리 전체가 노출됨.
 
 **원인** : 인증 의존성이 붙기 전 UI 확인용으로 만든 임시 구조가 그대로 남음. 코드리뷰에서 보안 이슈로 지적.
 
 **해결** : 팀원이 만든 JWT 인증 의존성 `Depends(get_current_user)`를 주입해 토큰(payload의 `sub` 클레임)에서 `user_id`를 추출하도록 변경. feedback 도메인의 다른 엔드포인트도 동일하게 통일.
 
 ```
-# Before: 누구나 user_id를 직접 입력해 조회 가능
-@router.get("/history")
+# Before: URL 경로에 user_id를 직접 넣어 조회 가능
+@router.get("/history/{user_id}", response_model=list[FeedbackResponse])
 async def api_get_history(user_id: str):
     return await get_history(user_id)
 
 # After: JWT에서 user_id 추출 — 본인 데이터만 조회
-@router.get("/history")
+@router.get("/history", response_model=HistoryResponse)
 async def api_get_history(current_user: str = Depends(get_current_user)):
     return await get_history(current_user)
 ```
 
-**결과** : 본인 데이터만 조회 가능. feedback 도메인 4개 엔드포인트(`/generate`, `/history`, `/stats`, `/{interview_id}`) 전부 JWT 필수로 통일. 
+**결과** : 본인 데이터만 조회 가능. feedback 도메인 4개 엔드포인트(`/generate`, `/history`, `/stats`, `/{interview_id}`) 전부 JWT 필수로 통일.
 <br>
 
 ### (2) 히스토리 조회 — N+1 쿼리와 무제한 메모리 적재
@@ -263,8 +263,12 @@ async def api_get_history(current_user: str = Depends(get_current_user)):
 ```
 # Before: 피드백 N개 → 면접 N번 조회, 전체 피드백을 메모리에 한꺼번에 로드
 docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
+
+result = []
 for doc in docs:
-    interview = await db["interviews"].find_one({"_id": doc["interview_id"]})
+    feedback_doc = FeedbackDocument(**doc)
+    interview = await _get_interview(feedback_doc.interview_id)  # 내부에서 find_one 호출 → N+1
+    result.append(_to_response(feedback_doc, interview))
 
 # After: skip + limit으로 페이지 단위 조회 → 면접은 $in으로 1번에 조회
 total = await db["feedbacks"].count_documents({"user_id": user_id})
@@ -421,7 +425,7 @@ docker compose up --build
 
 ## 회고 및 개선사항
 
-### 회고
+### ㅡ 회고
 
 **1. 팀 간 인터페이스 동기화**
  
@@ -436,11 +440,11 @@ docker compose up --build
  
 **3. 코드리뷰로 배운 것**
  
-담당 파트의 백엔드 이슈 4건 중 3건(인가 누락, N+1 · 메모리 적재, 에러 처리)이 모두 코드리뷰에서 나왔습니다. 로컬에서 소량 데이터로 테스트할 때는 인지하지 못했던 부분이라, "동작한다"와 "안전하다 · 확장된다"는 다른 기준이라는 것을 꺠달았습니다.
+담당 파트의 백엔드 이슈 4건 중 3건(인가 누락, N+1 · 메모리 적재, 에러 처리)이 모두 코드리뷰에서 나왔습니다. 로컬에서 소량 데이터로 테스트할 때는 인지하지 못했던 부분이라, "동작한다"와 "안전하다 · 확장된다"는 다른 기준이라는 것을 깨달았습니다.
 
 ---
 
-### 추후 개선하고 싶은 사항
+### ㅡ 개선하고 싶은 사항
 
 **타임존 처리 통일**  
 MongoDB는 UTC(국제표준시)로 시각을 저장하는데, 이번 주 면접 횟수 집계 등 일부 로직에서는 KST(한국표준시) 기준으로 비교하면 시간 오차가 발생할 수 있습니다. 예를 들어 현재 코드에서는 tzinfo가 없는 경우(naive datetime)나 week_start 계산 기준을 KST로 잡고 계산해서 두 타임존이 혼용됩니다. 저장 시점과 내부 로직을 전부 UTC로 통일시키고 사용자 화면에 표시할때만 KST로 변환해야 9시간 오차나 혼용되는 상황을 방지할 수 있습니다.
