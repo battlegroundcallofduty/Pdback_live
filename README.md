@@ -15,7 +15,8 @@
 - [프로젝트 구조](#프로젝트-구조)
 - [아키텍처 & 사용 흐름](#아키텍처--사용-흐름)
 - [주요 기능(스크린샷)](#주요-기능)
-- [**내 담당 기능 상세 / 트러블슈팅**](#내-담당-기능-상세)
+- [**내 담당 기능 상세**](#내-담당-기능-상세)
+- [**트러블슈팅 & 코드리뷰**](#트러블슈팅--코드리뷰)
 - [API 엔드포인트](#api-엔드포인트)
 - [로컬 실행 방법](#로컬-실행-방법)
 - [회고 및 개선사항](#회고-및-개선사항)
@@ -222,14 +223,21 @@ flowchart TD
 
 ---
 
-### + 코드리뷰 & 트러블슈팅 🐛
+## 트러블슈팅 & 코드리뷰
 
-#### (1) 인증 없이 타인의 히스토리 조회 가능
+> 백엔드 4건 · 프론트엔드 4건. 각 항목은 **문제 → 원인 → 해결 → 결과** 순서로 정리했습니다.
 
-초기 구현에서 `GET /feedback/history`가 `user_id`를 쿼리 파라미터로 직접 받는 구조였습니다. 로그인 없이 임의의 `user_id`를 입력하면 해당 사용자의 면접 히스토리 전체가 노출되는 취약점이었습니다.  
-코드리뷰에서 보안 이슈로 지적받아, 다른 팀원분이 만든 JWT 토큰 기반 인증 의존성을 주입하고 토큰에서 `user_id`를 추출하도록 수정했습니다. 다른 엔드포인트도 동일하게 `Depends(get_current_user)`로 통일했습니다.
+### ㅡ 백엔드
 
-```python
+### (1) 인증 없이 타인의 히스토리 조회 가능
+
+**문제** : `GET /feedback/history`가 `user_id`를 쿼리 파라미터로 직접 받는 구조. 로그인 없이 임의의 `user_id`만 넣으면 해당 사용자의 면접 히스토리 전체가 노출됨.
+
+**원인** : 인증 의존성이 붙기 전 UI 확인용으로 만든 임시 구조가 그대로 남음. 코드리뷰에서 보안 이슈로 지적.
+
+**해결** : 팀원이 만든 JWT 인증 의존성 `Depends(get_current_user)`를 주입해 토큰(payload의 `sub` 클레임)에서 `user_id`를 추출하도록 변경. feedback 도메인의 다른 엔드포인트도 동일하게 통일.
+
+```
 # Before: 누구나 user_id를 직접 입력해 조회 가능
 @router.get("/history")
 async def api_get_history(user_id: str):
@@ -239,105 +247,122 @@ async def api_get_history(user_id: str):
 @router.get("/history")
 async def api_get_history(current_user: str = Depends(get_current_user)):
     return await get_history(current_user)
-```  
-
-#### (2) 전체 피드백 무제한 메모리 적재 — 페이지네이션으로 해결
-
-히스토리 목록 조회 시 `to_list(length=None)`으로 사용자의 모든 피드백을 한 번에 메모리에 올리고 있었습니다.  
-면접 기록이 쌓일수록 메모리 사용량이 제한 없이 증가하는 구조였습니다.  
-코드리뷰에서 지적받은 뒤, 서버 사이드 페이지네이션(`skip` + `limit`)을 도입하여 요청당 `size`건만 조회하도록 개선했습니다. `limit(size)`로 건수가 제한되므로 `to_list`에 실제로 올라오는 데이터는 최대 `size`건입니다.
-
-```python
-# Before: 전체 피드백을 메모리에 한꺼번에 로드
-docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
-
-# After: skip + limit으로 페이지 단위 조회
-docs = await db["feedbacks"].find({"user_id": user_id}).skip(skip).limit(size).to_list(length=None)
-```  
-
-#### (3) 응답 시간 측정 기준 오류 — 질문 생성 시점 → 프론트 측정값으로 교체
-
-서버에서 `started_at`(질문 저장 시각)과 `ended_at`(답변 제출 시각)의 차이로 응답 시간을 계산했습니다.  
-이 방식은 AI가 질문을 생성하는 시간과 사용자가 질문을 읽는 시간까지 포함되어 실제 사용자의 답변 시간보다 훨씬 길게 측정되는 문제가 있었습니다.  
-프론트엔드에서 "답변 시작" 버튼 클릭부터 "답변 완료" 버튼 클릭까지의 시간을 직접 측정해 `duration_seconds`로 전송하도록 변경하고, 서버는 이 값을 우선 사용하도록 수정했습니다.
-
-```python
-# Before: 서버에서 질문 저장 시각 기준 계산 — 질문 생성·읽기 시간 포함
-duration_seconds = int((ended_at - started_at).total_seconds())
-
-# After: 프론트에서 측정한 실제 사용자의 답변 시간 우선 사용
-duration_seconds = request.duration_seconds if request.duration_seconds is not None else int((ended_at - started_at).total_seconds())
 ```
 
-#### (4) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+**결과** : 본인 데이터만 조회 가능. feedback 도메인 4개 엔드포인트(`/generate`, `/history`, `/stats`, `/{interview_id}`) 전부 JWT 필수로 통일. 
+<br>
 
-마지막 세션이 끝나고 "다음" 버튼을 누르면 피드백 생성 API 응답을 기다리지 않고 바로 히스토리 페이지로 이동했습니다.  
-피드백이 저장되지 않은 상태로 히스토리가 열려 방금 한 면접이 목록에 없는 문제였습니다.  
-피드백 생성 요청을 `await`한 뒤에 페이지를 이동하도록 수정했습니다.
+### (2) 히스토리 조회 — N+1 쿼리와 무제한 메모리 적재
 
-```javascript
-nextSessionBtn.addEventListener("click", async function () {
-    nextSessionBtn.disabled = true;
-    nextSessionBtn.textContent = "피드백 저장 중...";
-    try {
-        await fetch("/api/v1/feedback/generate", { method: "POST", ... });
-    } catch (e) {
-        // 피드백 저장 실패해도 면접은 완료된 상태이므로 히스토리 페이지로 이동은 항상 진행!
-    }
-    window.location.href = '/history';
-});
-```  
+**문제** : 히스토리 목록을 가져올 때 ① 피드백마다 면접 데이터를 개별 조회해 N번의 DB 왕복 발생 ② `to_list(length=None)`으로 사용자의 전체 피드백을 한 번에 메모리에 적재. 면접 기록이 쌓일수록 응답 시간과 메모리 사용량이 함께 증가하는 구조.
 
-> 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼 표시
+**원인** : 초기 구현 시 조회 건수가 적어 문제가 드러나지 않았고, 코드리뷰에서 지적받음.
 
-#### (5) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+**해결** : 면접 ID 목록을 `$in`으로 한 번에 조회한 뒤 딕셔너리로 매핑해 단일 쿼리로 처리. 서버 사이드 페이지네이션(`skip` + `limit`)을 도입해 요청당 `size`건만 조회.
 
-히스토리에서 방금 생성된 면접에 "NEW" 뱃지를 붙이려고 `Date.now() - new Date(item.created_at)`로 경과 시간을 계산했습니다.  
-MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱하여 9시간 오차가 발생했고, 결과적으로 뱃지가 표시되지 않는 오류가 발생했습니다.  
-`'Z'`를 명시적으로 붙여 UTC로 강제 처리했습니다.
+```
+# Before: 피드백 N개 → 면접 N번 조회, 전체 피드백을 메모리에 한꺼번에 로드
+docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
+for doc in docs:
+    interview = await db["interviews"].find_one({"_id": doc["interview_id"]})
 
-```javascript
-// Before
-const isNew = (Date.now() - new Date(item.created_at).getTime()) < 10 * 60 * 1000;
+# After: skip + limit으로 페이지 단위 조회 → 면접은 $in으로 1번에 조회
+total = await db["feedbacks"].count_documents({"user_id": user_id})
+skip = (page - 1) * size
 
-// After
-const createdAt = item.created_at.endsWith('Z') ? item.created_at : item.created_at + 'Z';
-const isNew = (Date.now() - new Date(createdAt).getTime()) < 30 * 60 * 1000;
-```  
+docs = await db["feedbacks"].find({"user_id": user_id}) \
+    .sort("created_at", -1) \
+    .skip(skip).limit(size).to_list(length=None)
 
-#### (6) JS 인라인 이벤트 핸들러 중복 등록 (아코디언 버그)
+feedback_docs = [FeedbackDocument(**doc) for doc in docs]
+interview_ids = [f.interview_id for f in feedback_docs]
 
-피드백 페이지 질문 아코디언을 `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩했습니다.  
-DOM이 다시 렌더링될 때 핸들러가 중복 등록되어 클릭 한 번에 아코디언이 두 번 토글되는 버그가 발생했습니다.  
-이벤트 위임 방식으로 변경해 해결했습니다.
+interview_list = await db["interviews"].find(
+    {"_id": {"$in": interview_ids}}
+).to_list(length=None)
+interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
+```
 
-```javascript
+**결과** : 요청당 DB 왕복이 건수와 무관하게 3회(전체 개수 카운트 1회 + 피드백 조회 1회 + 면접 조회 1회)로 고정. 메모리에 올라오는 피드백은 최대 `size`건으로 제한. 면접 데이터가 없는 고아 피드백은 응답에서 스킵하는 방어 로직도 함께 추가.
+<br>
+
+### (3) 에러가 원인과 무관하게 전부 500으로 응답됨
+ 
+**문제** : 비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 잡지 못해 모든 실패가 500으로 응답. 프론트가 "다시 시도해도 되는 오류"인지 "권한 문제"인지 구분할 수 없었음.
+ 
+**원인** : 예외 종류와 HTTP 응답의 대응 관계를 정하지 않은 채 구현. 코드리뷰에서 지적.
+ 
+**해결** : `HTTPException`으로 통일하고 상황별 상태 코드를 분리 — 피드백 중복 생성 409, 소유자 불일치 403, Gemini 호출 실패 502.
+
+**결과** : 프론트가 상태 코드만으로 "히스토리로 이동(409)" / "권한 없음(403)" / "재시도 안내(502)"를 구분해 처리 가능. 면접 종료 직후 새로고침 · 버튼 중복 클릭으로 같은 document가 두 번 삽입되는 문제도 409로 차단.
+<br>
+
+### (4) 응답 시간 측정 기준 오류 — 질문 생성 시점 → 프론트 측정값으로 교체
+ 
+**문제** : 질문별 답변 소요 시간이 실제보다 훨씬 길게 표시됨.
+ 
+**원인** : 서버에서 `started_at`(질문 저장 시각)과 `ended_at`(답변 제출 시각)의 차이로 계산해, AI가 질문을 생성하는 시간과 사용자가 질문을 읽는 시간까지 포함됨.
+ 
+**해결** : 프론트에서 "답변 시작" 버튼 클릭부터 "답변 완료" 클릭까지를 직접 측정해 `duration_seconds`로 전송하고, 서버는 이 값을 우선 사용. 값이 없으면 기존 계산으로 폴백. interview 도메인 코드라 담당 팀원 확인 후 수정.
+
+**결과** : 사용자가 실제로 말한 시간만 측정됨. "무엇을 측정하는지"는 그 시점을 가장 정확히 아는 쪽(클라이언트)이 정하고, 서버는 검증과 폴백만 맡는 구조로 정리.
+<br>
+
+### ㅡ 프론트엔드
+
+### (5) 세션 완료 후 피드백이 저장되지 않고 페이지 이동
+ 
+**문제** : 마지막 세션 종료 후 "다음" 버튼을 누르면 히스토리 페이지에 방금 한 면접이 없음.
+ 
+**원인** : 피드백 생성 API 응답을 기다리지 않고 바로 페이지를 이동해, 저장 전에 히스토리가 열림.
+ 
+**해결** : 피드백 생성 요청을 `await`한 뒤 이동. 저장 실패 시에도 면접 자체는 완료된 상태이므로 이동은 항상 진행.
+
+**결과** : 히스토리에 방금 한 면접이 즉시 표시. 현재 코드는 `authFetch`로 리팩토링되고 단일 세션 종료 후 "히스토리로 이동" 버튼을 표시하는 구조.
+<br>
+
+### (6) NEW 뱃지 표시 오류 — `created_at` UTC 파싱 문제
+ 
+**문제** : 방금 생성된 면접에 "NEW" 뱃지가 붙지 않음.
+ 
+**원인** : MongoDB에서 반환된 ISO 문자열에 `Z` suffix가 없으면 브라우저가 로컬 시간으로 파싱해 9시간 오차 발생. `Date.now() - new Date(item.created_at)` 결과가 항상 기준을 초과.
+ 
+**해결** : `'Z'`가 없으면 명시적으로 붙여 UTC로 강제 파싱.
+
+**결과** : 뱃지 정상 표시. 근본 원인은 서버 응답의 타임존 표기가 일관되지 않은 것이라, 저장 · 내부 로직을 UTC로 통일하는 개선을 추후 개선 사항에 기록.
+<br>
+
+### (7) 인라인 이벤트 핸들러 중복 등록 — 아코디언 버그
+
+**문제** : 피드백 페이지 질문 아코디언이 클릭 한 번에 두 번 토글됨.
+
+**원인** : `onclick="toggleQuestion(this)"`로 각 요소에 직접 바인딩해, DOM이 다시 렌더링될 때 핸들러가 중복 등록됨.
+
+**해결** : 컨테이너(`#question-feedbacks`)에 한 번만 등록하는 이벤트 위임 방식으로 변경.
+
+```
 // Before
 item.innerHTML = `<div class="question-header" onclick="toggleQuestion(this)"> ... </div>`
 
 // After — 컨테이너에 이벤트 위임 한 번만 등록
-qContainer.addEventListener('click', function(e) {
+document.getElementById('question-feedbacks').addEventListener('click', function(e) {
   const header = e.target.closest('.question-header');
   if (header) toggleQuestion(header);
 });
-```  
+```
 
-#### (7) 페이지네이션 버튼이 동작하지 않는 버그
+**결과** : 리렌더링 횟수와 무관하게 핸들러 1개만 유지.
+<br>
 
-히스토리 페이지의 페이지네이션 버튼을 눌러도 아무 반응이 없었습니다.  
-`renderPagination()`에서 HTML 문자열로 버튼을 생성하면서 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 있어 전역에서 접근할 수 없었습니다.  
-`window.goPage`로 전역 노출하고, 유효하지 않은 페이지 번호 요청도 차단했습니다.
+### (8) 페이지네이션 버튼이 동작하지 않는 버그
+ 
+**문제** : 히스토리 페이지의 페이지네이션 버튼을 눌러도 반응 없음.
+ 
+**원인** : `renderPagination()`이 HTML 문자열로 버튼을 생성하며 `onclick="goPage(n)"`을 사용했는데, `goPage`가 모듈 스코프에만 선언되어 전역에서 접근 불가.
+ 
+**해결** : `window.goPage`로 전역 노출하고, 범위를 벗어난 페이지 번호 요청은 차단.
 
-```javascript
-// Before
-async function goPage(page) { ... }
-
-// After
-window.goPage = async function(page) {
-  if (page < 1 || (totalPages > 0 && page > totalPages)) return;
-  await load(page);
-};
-```  
+**결과** : 페이지 이동 정상 동작, 잘못된 페이지 번호로 인한 불필요한 API 호출 차단.
 
 ---
 
@@ -396,41 +421,26 @@ docker compose up --build
 
 ## 회고 및 개선사항
 
-### 💡 기억에 남는 구현
+### 회고
 
-**1. N+1 쿼리 문제 해결**
-
-히스토리 목록을 가져올 때 피드백마다 면접 데이터를 개별 조회하면 N번의 DB 왕복이 발생합니다.  
-`$in` 연산자로 면접 ID 목록을 한 번에 조회한 뒤 딕셔너리로 매핑하여 단일 쿼리로 처리했습니다.
-
-```python
-# Before: 피드백 N개 → 면접 N번 조회
-# After: 피드백 N개 → 면접 1번 조회($in)
-interview_list = await db["interviews"].find(
-    {"_id": {"$in": interview_ids}}
-).to_list(length=None)
-interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
-```
-
-**2. 팀 간 인터페이스 동기화**
-
+**1. 팀 간 인터페이스 동기화**
+ 
 피드백 도메인은 다른 팀원이 만든 데이터들을 조회하거나 가공하는 구조입니다.  
-토큰 필드명(access_token), interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.  
-
-**3. 에러 처리 체계화**
-
-초기에는 에러 처리가 일관성이 없었습니다. 비즈니스 로직에서 `ValueError`, `RuntimeError`를 그대로 던지면 FastAPI가 이를 잡지 못해 원인과 무관하게 전부 500으로 응답하는 문제가 있었습니다.  
-코드리뷰를 통해 `HTTPException`으로 통일하고, 피드백 중복 생성 차단(409), 소유자 불일치(403), Gemini 호출 실패(502) 등 상황별 상태 코드를 명시적으로 분리하면서 API 신뢰성을 높였습니다.
-
-**4. `bad_posture_count` 모델 설계 수정**
-
+토큰 필드명(access_token), interview ID 방식(UUID vs MongoDB ObjectId), 모델 필드명 변경이 생길 때마다 인터페이스를 맞추는 과정에서, 팀원간의 소통과 협업의 중요성을 체감했습니다.
+ 
+**2. `bad_posture_count` 모델 설계 수정**
+ 
 초기에는 불량 자세 횟수(`bad_posture_count`)를 저장하려 했습니다. 그러나 피드백 페이지를 설계하면서 현재 수집 데이터로는 의미 있는 `bad_posture_count`를 산출하기도 어렵고 사용자들에게 활용도가 낮은 정보라고 판단했습니다.  
 이에 따라 불량 자세 횟수 필드는 삭제하고 원래 넣기로 계획되어 있던 태도 점수(`attitude_score`) 필드를 설계했습니다.
 시선 처리율(`eye_contact`)과 자세 안정성(`posture_safety_rate`)을 가중 평균한 `attitude_score`로 필드를 넣어 피드백 페이지에서 바로 활용할 수 있는 형태로 정리했습니다.
+ 
+**3. 코드리뷰로 배운 것**
+ 
+담당 파트의 백엔드 이슈 4건 중 3건(인가 누락, N+1 · 메모리 적재, 에러 처리)이 모두 코드리뷰에서 나왔습니다. 로컬에서 소량 데이터로 테스트할 때는 인지하지 못했던 부분이라, "동작한다"와 "안전하다 · 확장된다"는 다른 기준이라는 것을 꺠달았습니다.
 
 ---
 
-### ✍️ 추후 개선하고 싶은 사항
+### 추후 개선하고 싶은 사항
 
 **타임존 처리 통일**  
 MongoDB는 UTC(국제표준시)로 시각을 저장하는데, 이번 주 면접 횟수 집계 등 일부 로직에서는 KST(한국표준시) 기준으로 비교하면 시간 오차가 발생할 수 있습니다. 예를 들어 현재 코드에서는 tzinfo가 없는 경우(naive datetime)나 week_start 계산 기준을 KST로 잡고 계산해서 두 타임존이 혼용됩니다. 저장 시점과 내부 로직을 전부 UTC로 통일시키고 사용자 화면에 표시할때만 KST로 변환해야 9시간 오차나 혼용되는 상황을 방지할 수 있습니다.
@@ -450,7 +460,7 @@ MongoDB는 UTC(국제표준시)로 시각을 저장하는데, 이번 주 면접 
 
 ---
 
-### 🔖 발표 후 받은 피드백 (향후 기능 아이디어)
+### 🔖 발표 후 받은 피드백 (추가 기능 아이디어)
 
 - 카메라 영점 보정 기능 (자세·시선 측정 전 기준점 설정)
 - 마이크 볼륨 세부 컨트롤 및 감도 조정
