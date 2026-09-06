@@ -225,7 +225,7 @@ flowchart TD
 
 ## 트러블슈팅 & 코드리뷰
 
-> 백엔드 4건 · 프론트엔드 4건. 각 항목은 **문제 → 원인 → 해결 → 결과** 순서로 정리했습니다.
+> 백엔드 4건 · 프론트엔드 4건. 각 항목은 '문제 → 원인 → 해결 → 결과' 순서로 정리했습니다.
 
 ### ㅡ 백엔드
 
@@ -237,7 +237,7 @@ flowchart TD
 
 **해결** : 팀원이 만든 JWT 인증 의존성 `Depends(get_current_user)`를 주입해 토큰(payload의 `sub` 클레임)에서 `user_id`를 추출하도록 변경. feedback 도메인의 다른 엔드포인트도 동일하게 통일.
 
-```
+```python
 # Before: URL 경로에 user_id를 직접 넣어 조회 가능
 @router.get("/history/{user_id}", response_model=list[FeedbackResponse])
 async def api_get_history(user_id: str):
@@ -260,7 +260,7 @@ async def api_get_history(current_user: str = Depends(get_current_user)):
 
 **해결** : 면접 ID 목록을 `$in`으로 한 번에 조회한 뒤 딕셔너리로 매핑해 단일 쿼리로 처리. 서버 사이드 페이지네이션(`skip` + `limit`)을 도입해 요청당 `size`건만 조회.
 
-```
+```python
 # Before: 피드백 N개 → 면접 N번 조회, 전체 피드백을 메모리에 한꺼번에 로드
 docs = await db["feedbacks"].find({"user_id": user_id}).to_list(length=None)
 
@@ -344,7 +344,7 @@ interviews = {doc["_id"]: InterviewDocument(**doc) for doc in interview_list}
 
 **해결** : 컨테이너(`#question-feedbacks`)에 한 번만 등록하는 이벤트 위임 방식으로 변경.
 
-```
+```javascript
 // Before
 item.innerHTML = `<div class="question-header" onclick="toggleQuestion(this)"> ... </div>`
 
