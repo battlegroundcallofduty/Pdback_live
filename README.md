@@ -147,7 +147,7 @@ flowchart TD
 
 | 피드백페이지 1 | 피드백페이지 2 |
 |:---------:|:---------:|
-| ![피드백1](assets/feedback1.png) | ![피드백3](assets/feedback3.png) |
+| ![피드백1](assets/feedback1.jpg) | ![피드백3](assets/feedback3.png) |
 
 ### 4️⃣ 면접 히스토리 · 마이페이지
 
