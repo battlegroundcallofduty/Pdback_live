@@ -9,17 +9,17 @@
 
 ## 목차
 
-- [프로젝트 소개](#프로젝트-소개)
-- [관련 문서](#관련-문서)
-- [기술 스택](#기술-스택)
-- [프로젝트 구조](#프로젝트-구조)
-- [아키텍처 & 사용 흐름](#아키텍처--사용-흐름)
-- [주요 기능(스크린샷)](#주요-기능)
-- [**내 담당 기능 상세**](#내-담당-기능-상세)
-- [**트러블슈팅 & 코드리뷰**](#트러블슈팅--코드리뷰)
-- [API 엔드포인트](#api-엔드포인트)
-- [로컬 실행 방법](#로컬-실행-방법)
-- [회고 및 개선사항](#회고-및-개선사항)
+1. [프로젝트 소개](#프로젝트-소개)
+2. [관련 문서](#관련-문서)
+3. [기술 스택](#기술-스택)
+4. [프로젝트 구조](#프로젝트-구조)
+5. [아키텍처 & 사용 흐름](#아키텍처--사용-흐름)
+6. [주요 기능(스크린샷)](#주요-기능)
+7. [API 엔드포인트](#api-엔드포인트)
+8. [로컬 실행 방법](#로컬-실행-방법)
+9. [**내 담당 기능 상세**](#내-담당-기능-상세)
+10. [**트러블슈팅 & 코드리뷰**](#트러블슈팅--코드리뷰)
+11. [회고 및 개선사항](#회고-및-개선사항)
 
 ---
 
@@ -145,21 +145,70 @@ flowchart TD
 - 질문별 점수, 기술 / 논리 / 키워드 종합 점수, 강점 및 개선점 제공
 - 자세·시선 점수와 코멘트 자동 생성
 
-![피드백1](assets/feedback1.png)
-![피드백2](assets/feedback2.png)
-![피드백3](assets/feedback3.png)
+| 피드백페이지 1 | 피드백페이지 2 |
+|:---------:|:---------:|
+| ![피드백1](assets/feedback1.png) | ![피드백3](assets/feedback3.png) |
 
-### 4️⃣ 면접 히스토리
+### 4️⃣ 면접 히스토리 · 마이페이지
 
-- 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+- **면접 히스토리**: 과거 면접 목록 최신순 조회 및 점수 추이 바 차트 시각화
+- **마이페이지**: 프로필 수정, 비밀번호 변경 및 총 면접 횟수, 평균·최고 점수, 이번 주 횟수 집계
 
-![히스토리](assets/history.png)
+| 면접 히스토리 | 마이페이지 |
+|:---------:|:---------:|
+| ![히스토리](assets/history.png) | ![마이페이지](assets/mypage.png) |
 
-### 5️⃣ 마이페이지
+---
 
-- 프로필 수정, 비밀번호 변경 및 총 면접 횟수, 평균 점수, 최고 점수, 이번 주 면접 횟수 집계
+## API 엔드포인트
 
-![마이페이지](assets/mypage.png)
+### &nbsp;•&nbsp;&nbsp;Feedback (담당 파트)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| `POST` | `/api/v1/feedback/generate` | 면접 종료 후 AI 피드백 생성 | JWT 필요 |
+| `GET` | `/api/v1/feedback/history` | 내 면접 히스토리 목록 조회 (페이지네이션) | JWT 필요 |
+| `GET` | `/api/v1/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
+| `GET` | `/api/v1/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
+
+### &nbsp;•&nbsp;&nbsp;전체 API (Swagger UI)
+![엔드포인트](assets/api_endpoint.png)
+
+---
+
+## 로컬 실행 방법
+
+### &nbsp;•&nbsp;&nbsp;환경 설정
+
+```bash
+cp .env.example .env
+```
+
+`.env` 파일에 아래 항목을 채워넣습니다.
+
+| 변수 | 설명 |
+|------|------|
+| `GEMINI_API_KEY` | Google Gemini API 키 |
+| `MONGODB_URL` | MongoDB 연결 URI (예: `mongodb://localhost:27017`) |
+| `MONGODB_DB_NAME` | 사용할 데이터베이스 이름 |
+| `DEBUG` | 디버그 모드 (`true` / `false`) |
+| `CORS_ORIGINS` | 허용할 CORS 출처 (예: `http://localhost:8000`) |
+| `SECRET_KEY` | JWT 서명용 시크릿 키 |
+
+### &nbsp;•&nbsp;&nbsp;pip으로 실행
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### &nbsp;•&nbsp;&nbsp;Docker로 실행
+
+```bash
+docker compose up --build
+```
 
 ---
 
@@ -370,59 +419,6 @@ document.getElementById('question-feedbacks').addEventListener('click', function
 
 ---
 
-## API 엔드포인트
-
-### •  Feedback (담당 파트)
-
-| Method | Endpoint | 설명 | 인증 |
-|--------|----------|------|------|
-| `POST` | `/api/v1/feedback/generate` | 면접 종료 후 AI 피드백 생성 | JWT 필요 |
-| `GET` | `/api/v1/feedback/history` | 내 면접 히스토리 목록 조회 (페이지네이션) | JWT 필요 |
-| `GET` | `/api/v1/feedback/stats` | 마이페이지 통계 조회 | JWT 필요 |
-| `GET` | `/api/v1/feedback/{interview_id}` | 피드백 상세 조회 | JWT 필요 |
-
-### •  전체 API (Swagger UI)
-![엔드포인트](assets/api_endpoint.png)
-
----
-
-## 로컬 실행 방법
-
-### ▪️ 환경 설정
-
-```bash
-cp .env.example .env
-```
-
-`.env` 파일에 아래 항목을 채워넣습니다.
-
-| 변수 | 설명 |
-|------|------|
-| `GEMINI_API_KEY` | Google Gemini API 키 |
-| `MONGODB_URL` | MongoDB 연결 URI (예: `mongodb://localhost:27017`) |
-| `MONGODB_DB_NAME` | 사용할 데이터베이스 이름 |
-| `DEBUG` | 디버그 모드 (`true` / `false`) |
-| `CORS_ORIGINS` | 허용할 CORS 출처 (예: `http://localhost:8000`) |
-| `SECRET_KEY` | JWT 서명용 시크릿 키 |
-
-### ▪️ pip으로 실행
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-### ▪️ Docker로 실행
-
-```bash
-docker compose up --build
-```
-
-
----
-
 ## 회고 및 개선사항
 
 ### ㅡ 회고
@@ -474,6 +470,4 @@ MongoDB는 UTC(국제표준시)로 시각을 저장하는데, 이번 주 면접 
 - JD(직무기술서) 파일 또는 텍스트를 입력하면 관련 질문을 자동 구성하는 기능
 - GitHub Actions 기반 PR 자동화
 
----
-
-*백엔드 상세 Git 작업 가이드는 [TEAM_README.md](./TEAM_README.md)를 참고하세요.*
+> *백엔드 상세 Git 작업 가이드는 [TEAM_README.md](./TEAM_README.md)를 참고하세요.*
